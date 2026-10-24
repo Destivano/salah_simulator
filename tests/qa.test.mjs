@@ -38,7 +38,7 @@ test('HTTP routing protects secrets, forwards selected model, and sanitizes erro
     if (url.endsWith('/models')) return Response.json({ data: MODELS.filter(m => m.provider === 'groq').map(m => ({ id: m.id })) });
     lastBody = JSON.parse(options.body);
     calls++;
-    if (providerStatus !== 200) return Response.json({ error: 'secret-test-key' }, { status: providerStatus });
+    if (providerStatus !== 200) return Response.json({ error: 'secret-test-key' }, { status: providerStatus, headers: { 'retry-after': '31' } });
     if (badAnswers-- > 0) return Response.json({ choices: [{ message: { content: '{"status":"answer","sections":[{"text":"uncited","sourceIds":[]}]}' } }] });
     return Response.json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(valid) } }] });
   } });
@@ -70,6 +70,13 @@ test('HTTP routing protects secrets, forwards selected model, and sanitizes erro
   const error = await request();
   assert.equal(error.status, 502);
   assert.ok(!(await error.text()).includes('secret-test-key'));
+  providerStatus = 429; calls = 0;
+  const limited = await request();
+  assert.equal(limited.status, 429);
+  const rateError = await limited.json();
+  assert.equal(rateError.retryAfterSeconds, 31);
+  assert.ok(!JSON.stringify(rateError).includes('secret-test-key'));
+  assert.equal(calls, 1); // Waiting happens in the browser, not a billed Lambda invocation.
 });
 test('all inline browser scripts parse', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');

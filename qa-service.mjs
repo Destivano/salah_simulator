@@ -114,6 +114,13 @@ export function createService({ env = process.env, fetchImpl = fetch, sourcesLoa
           signal,
         });
         if (!response.ok) {
+          if (response.status === 429) {
+            const error = new PublicError(429, 'بلغت الخدمة حد الاستخدام مؤقتًا. لا تحتاج إلى بدء محادثة جديدة.');
+            const retry = response.headers.get('retry-after');
+            const seconds = retry === null ? NaN : (/^\d+(\.\d+)?$/.test(retry) ? Number(retry) : (Date.parse(retry) - Date.now()) / 1000);
+            if (Number.isFinite(seconds) && seconds >= 0) error.retryAfterSeconds = Math.max(1, Math.ceil(seconds));
+            throw error;
+          }
           const messages = { 401: 'رفضت الخدمة مفتاح الاتصال.', 403: 'لا تسمح خطة الخدمة باستعمال هذا النموذج.', 429: 'بلغت الخدمة حد الطلبات أو الرصيد. حاول لاحقًا أو اختر خدمة أخرى.' };
           throw new PublicError(response.status === 429 ? 429 : 502, messages[response.status] || 'تعذّر الحصول على جواب من الخدمة. حاول مجددًا أو اختر نموذجًا آخر.');
         }
@@ -135,6 +142,8 @@ export function createService({ env = process.env, fetchImpl = fetch, sourcesLoa
 export function errorResponse(error) {
   return {
     status: error instanceof PublicError ? error.status : 502,
-    data: { error: error instanceof PublicError ? error.message : error.name === 'TimeoutError' ? 'انتهت مهلة الانتظار. حاول مجددًا.' : 'تعذّر إتمام الطلب. تحقق من الاتصال ثم حاول مجددًا.' },
+    data: { error: error instanceof PublicError ? error.message : error.name === 'TimeoutError' ? 'انتهت مهلة الانتظار. حاول مجددًا.' : 'تعذّر إتمام الطلب. تحقق من الاتصال ثم حاول مجددًا.',
+      ...(error instanceof PublicError && Number.isSafeInteger(error.retryAfterSeconds) ? { retryAfterSeconds: error.retryAfterSeconds } : {}),
+    },
   };
 }
