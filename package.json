@@ -1,0 +1,12 @@
+{
+  "name": "sahw-simulator",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node tests/search.test.mjs && node tests/qa.test.mjs && node tests/lambda.test.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "package:lambda": "python scripts/package-lambda.py"
+  }
+}

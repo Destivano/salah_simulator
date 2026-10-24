@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محاكي سجود السهو · اختر متى نسيت ومتى تذكرت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2b2118; --ink-soft:#574836;
+    --parchment:#f4ecd8; --parchment-deep:#e9dcc0;
+    --gold:#a8842c; --gold-bright:#c9a227;
+    --crimson:#8c3a2b; --green:#3d6b4f;
+    --green-soft:#e3eee6; --crimson-soft:#f6e4df;
+    --line:#d8c9a6; --shadow:rgba(43,33,24,.18);
+    --grey:#9a8f7d; --blue:#3a5f7d; --blue-soft:#e0ebf2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  button,input,select,textarea{font:inherit;color:inherit}
+  svg text{font-family:'IBM Plex Sans Arabic',sans-serif}
+  body{
+    font-family:'IBM Plex Sans Arabic',sans-serif;
+    background:var(--parchment);color:var(--ink);
+    line-height:1.8;min-height:100vh;
+    background-image:
+      radial-gradient(circle at 12% 18%,rgba(168,132,44,.06),transparent 40%),
+      radial-gradient(circle at 88% 75%,rgba(140,58,43,.05),transparent 42%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  }
+  header{
+    position:relative;overflow:hidden;
+    text-align:center;padding:2.6rem 1.5rem 1.8rem;border-bottom:3px double var(--gold);
+    background:linear-gradient(180deg,rgba(233,220,192,.6),rgba(244,236,216,0));
+  }
+  /* نقش هندسي إسلامي شفاف يتلاشى نحو الأسفل */
+  header::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23a8842c' stroke-opacity='.2' stroke-width='1'%3E%3Crect x='16' y='16' width='40' height='40'/%3E%3Crect x='16' y='16' width='40' height='40' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3Cpath d='M0 36h9M63 36h9M36 0v9M36 63v9'/%3E%3C/g%3E%3C/svg%3E");
+    -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 92%);
+            mask-image:linear-gradient(180deg,#000 0%,transparent 92%);
+  }
+  header>*{position:relative}
+  .ornament{font-family:'Aref Ruqaa',serif;color:var(--gold);font-size:1.5rem;letter-spacing:.4rem;opacity:.7}
+  header h1{font-family:'Aref Ruqaa',serif;font-size:clamp(1.9rem,6vw,3.2rem);color:var(--crimson);margin:.3rem 0;line-height:1.2}
+  header .sub{font-size:clamp(.95rem,3vw,1.2rem);color:var(--ink-soft);max-width:680px;margin:.5rem auto 0;line-height:1.9}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:2rem 1rem 4rem}
+
+  .step-label{display:flex;align-items:center;gap:.7rem;margin:2rem 0 1rem}
+  .step-label .n{font-family:'Aref Ruqaa',serif;font-size:1.1rem;color:#fff;background:var(--gold);width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;flex-shrink:0;box-shadow:0 3px 8px var(--shadow)}
+  .step-label h2{font-family:'Aref Ruqaa',serif;font-size:clamp(1.2rem,4vw,1.7rem);color:var(--crimson)}
+  .step-label .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  /* rukn chooser */
+  .rukn-choices{display:flex;gap:.8rem;flex-wrap:wrap}
+  .rukn-btn{
+    flex:1 1 180px;cursor:pointer;
+    background:linear-gradient(165deg,#fdfaf1,#f1e7cf);border:2px solid var(--line);
+    border-radius:16px;padding:1.1rem .8rem;text-align:center;transition:.25s;position:relative;
+  }
+  .rukn-btn .icon{font-size:1.6rem;display:block;margin-bottom:.2rem}
+  .rukn-btn .t{font-size:1.15rem;font-weight:600;color:var(--ink)}
+  .rukn-btn .d{font-size:.78rem;color:var(--ink-soft);margin-top:.2rem}
+  .rukn-btn:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 20px rgba(43,33,24,.13)}
+  .rukn-btn.active{border-color:var(--crimson);background:linear-gradient(165deg,#fff,#f6e4df)}
+  .rukn-btn.active::after{content:"✓";position:absolute;top:.45rem;left:.6rem;color:var(--crimson);font-weight:700}
+
+  /* main interactive board */
+  .board{
+    background:linear-gradient(165deg,#fdfaf1,#f1e7cf);border:1px solid var(--line);
+    border-radius:20px;padding:1.6rem 1.2rem 1.8rem;box-shadow:0 4px 16px rgba(43,33,24,.08);margin-top:.4rem;
+  }
+  .board-instr{
+    text-align:center;font-size:1.05rem;color:var(--ink-soft);margin-bottom:1.2rem;
+  }
+  .board-instr b{font-weight:600;color:var(--crimson)}
+
+  .mode-tabs{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.4rem;flex-wrap:wrap}
+  .mode-tab{
+    font-size:.9rem;cursor:pointer;padding:.55rem 1.1rem;border-radius:999px;
+    border:2px solid var(--line);background:var(--parchment);color:var(--ink-soft);transition:.2s;display:flex;align-items:center;gap:.45rem;
+  }
+  .mode-tab .badge-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .mode-tab.active-forget{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:600}
+  .mode-tab.active-remember{border-color:var(--gold);background:#f7eccf;color:var(--gold);font-weight:600}
+  .mode-tab.done::after{content:"✓";margin-right:.2rem}
+
+  .tl-svg-wrap{width:100%;overflow-x:auto;padding:.4rem 0}
+  .tl-svg-wrap svg{display:block;margin:0 auto;max-width:100%;height:auto;min-width:760px;touch-action:manipulation}
+
+  .seg{cursor:pointer}
+  .seg rect{transition:.18s}
+  .seg:hover rect{filter:brightness(.97)}
+  .seg text{pointer-events:none}
+  .rakaa-title{font-family:'Aref Ruqaa',serif;font-weight:700}
+
+  .selectctl{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-top:.4rem}
+  .pill{
+    font-size:.85rem;padding:.4rem .9rem;border-radius:999px;border:1.5px solid var(--line);
+    background:var(--parchment);display:flex;align-items:center;gap:.4rem;
+  }
+  .pill b{font-weight:600}
+  .pill.forget b{color:var(--blue)}
+  .pill.remember b{color:var(--gold)}
+  .pill .x{cursor:pointer;color:var(--crimson);font-weight:700;opacity:.7}
+  .pill .x:hover{opacity:1}
+
+  .reset{
+    display:block;margin:1rem auto 0;font-size:.85rem;cursor:pointer;
+    background:transparent;border:1.5px solid var(--line);color:var(--ink-soft);border-radius:999px;padding:.45rem 1.3rem;transition:.2s;
+  }
+  .reset:hover{border-color:var(--crimson);color:var(--crimson)}
+
+  /* result */
+  .result{
+    margin-top:1.5rem;border-radius:16px;padding:1.4rem 1.4rem;text-align:center;border:2px solid;
+    transition:.35s;opacity:0;transform:translateY(10px);min-height:10px;
+  }
+  .result.show{opacity:1;transform:translateY(0)}
+  .result.before{background:var(--green-soft);border-color:var(--green)}
+  .result.after{background:var(--crimson-soft);border-color:var(--crimson)}
+  .result .verdict{font-family:'Aref Ruqaa',serif;font-size:clamp(1.4rem,4.5vw,2.1rem);margin-bottom:.5rem}
+  .result.before .verdict{color:var(--green)}
+  .result.after .verdict{color:var(--crimson)}
+  .result.batil{background:#e6e3df;border-color:#3a3a3a}
+  .result.batil .verdict{color:#3a3a3a}
+  .result.recover{background:var(--blue-soft);border-color:var(--blue)}
+  .result.recover .verdict{color:var(--blue)}
+  .result .explain{font-size:1.08rem;color:var(--ink-soft);max-width:640px;margin:0 auto .7rem}
+  .result .explain b{color:var(--ink);font-weight:600}
+  .result .ruleline{
+    font-size:.82rem;color:var(--ink-soft);
+    background:rgba(255,255,255,.5);border-radius:10px;padding:.5rem .8rem;display:inline-block;margin-top:.3rem;
+  }
+  .result .tag-yes{color:var(--green);font-weight:600}
+  .result .tag-no{color:var(--crimson);font-weight:600}
+
+  /* legend */
+  .legend{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;margin:1.2rem 0 .4rem;font-size:.82rem}
+  .legend span{display:flex;align-items:center;gap:.4rem;color:var(--ink-soft)}
+  .lbox{width:16px;height:16px;border-radius:4px;display:inline-block;border:1.5px solid}
+
+  /* general rule banner */
+  .rulebanner{
+    background:linear-gradient(165deg,#fff,#f3ecdb);border:1px dashed var(--gold);border-radius:16px;
+    padding:1.1rem 1.3rem;margin-top:1.6rem;font-size:1.08rem;color:var(--ink-soft);text-align:center;
+  }
+  .rulebanner b{color:var(--crimson);font-weight:600}
+  .rulebanner .g{color:var(--green);font-weight:600}
+
+  .placeholder{text-align:center;font-size:1.15rem;color:var(--ink-soft);padding:2rem 1rem;opacity:.7}
+
+  /* ===== زر المساعدة العائم ===== */
+  .help-fab{
+    position:fixed;bottom:20px;left:20px;z-index:60;
+    background:var(--crimson);color:#fff;border:none;cursor:pointer;
+    width:auto;padding:.7rem 1.2rem;border-radius:999px;
+    font-size:.95rem;font-weight:600;
+    box-shadow:0 6px 18px rgba(140,58,43,.4);display:flex;align-items:center;gap:.5rem;
+    transition:.2s;
+  }
+  .help-fab:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(140,58,43,.5)}
+  .help-fab .qmark{
+    background:#fff;color:var(--crimson);width:1.5rem;height:1.5rem;border-radius:50%;
+    display:grid;place-items:center;font-weight:700;font-size:1rem;
+  }
+
+  /* ===== نافذة الدليل ===== */
+  .guide-overlay{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(43,33,24,.55);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;padding:1rem;
+    opacity:0;pointer-events:none;transition:opacity .3s;
+  }
+  .guide-overlay.show{opacity:1;pointer-events:auto}
+  .guide{
+    background:linear-gradient(165deg,#fdfaf1,#f1e7cf);
+    border:2px solid var(--gold);border-radius:22px;
+    max-width:560px;width:100%;max-height:90vh;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(43,33,24,.4);
+    transform:translateY(20px) scale(.98);transition:transform .3s;
+  }
+  .guide-overlay.show .guide{transform:translateY(0) scale(1)}
+  .guide-head{
+    text-align:center;padding:1.6rem 1.5rem 1rem;border-bottom:2px solid var(--line);
+    position:sticky;top:0;background:linear-gradient(165deg,#fdfaf1,#f4ecd8);border-radius:22px 22px 0 0;
+  }
+  .guide-head .g-orn{font-family:'Aref Ruqaa',serif;color:var(--gold);font-size:1.3rem;opacity:.7}
+  .guide-head h2{font-family:'Aref Ruqaa',serif;font-size:1.7rem;color:var(--crimson);margin:.2rem 0}
+  .guide-head p{font-size:.95rem;color:var(--ink-soft)}
+  .guide-body{padding:1.3rem 1.5rem 1rem}
+
+  .g-step{
+    display:flex;gap:.9rem;margin-bottom:1.2rem;align-items:flex-start;
+  }
+  .g-step .g-num{
+    flex-shrink:0;width:2.2rem;height:2.2rem;border-radius:50%;
+    background:var(--gold);color:#fff;display:grid;place-items:center;
+    font-family:'Aref Ruqaa',serif;font-size:1.2rem;box-shadow:0 3px 8px var(--shadow);
+  }
+  .g-step .g-txt{font-size:1.02rem;color:var(--ink);line-height:1.75}
+  .g-step .g-txt b{color:var(--crimson);font-weight:700}
+  .g-step .g-txt .g-hint{display:block;font-size:.88rem;color:var(--ink-soft);margin-top:.15rem}
+
+  .g-divider{display:flex;align-items:center;gap:.7rem;margin:1.4rem 0 1rem}
+  .g-divider span{font-weight:600;color:var(--gold);font-size:1rem}
+  .g-divider .rule{flex:1;height:1px;background:var(--line)}
+
+  /* شرح ألوان النتائج */
+  .g-colors{display:flex;flex-direction:column;gap:.55rem;margin-bottom:1rem}
+  .g-color-row{
+    display:flex;align-items:center;gap:.7rem;
+    background:var(--parchment);border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem;
+  }
+  .g-color-row .g-chip{
+    flex-shrink:0;width:1.4rem;height:1.4rem;border-radius:7px;border:2px solid;
+  }
+  .g-color-row .g-cl{font-size:.95rem}
+  .g-color-row .g-cl b{font-weight:700}
+  .g-color-row .g-cl small{display:block;color:var(--ink-soft);font-size:.82rem}
+
+  /* شرح الخطوط */
+  .g-lines{display:flex;flex-direction:column;gap:.55rem;margin-bottom:.5rem}
+  .g-line-row{
+    display:flex;align-items:center;gap:.7rem;
+    background:var(--parchment);border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem;
+  }
+  .g-line-row .g-dash{flex-shrink:0;width:2.4rem;height:0;border-top:3px dashed;}
+  .g-line-row .g-cl{font-size:.95rem}
+  .g-line-row .g-cl b{font-weight:700}
+  .g-line-row .g-cl small{display:block;color:var(--ink-soft);font-size:.82rem}
+
+  .guide-foot{
+    position:sticky;bottom:0;padding:1rem 1.5rem 1.4rem;
+    background:linear-gradient(0deg,#f4ecd8,rgba(244,236,216,.6));border-radius:0 0 22px 22px;
+    display:flex;gap:.7rem;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  }
+  .guide-start{
+    flex:1;min-width:160px;font-size:1.05rem;font-weight:700;
+    background:var(--crimson);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:.8rem 1.4rem;
+    transition:.2s;box-shadow:0 5px 14px rgba(140,58,43,.35);
+  }
+  .guide-start:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(140,58,43,.45)}
+  .guide-dismiss{
+    font-size:.85rem;color:var(--ink-soft);
+    background:transparent;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;
+  }
+  .guide-dismiss input{width:16px;height:16px;accent-color:var(--crimson);cursor:pointer}
+
+  footer{text-align:center;padding:2.4rem 1.5rem;border-top:3px double var(--gold);color:var(--ink-soft);margin-top:1.5rem}
+  footer .verse{font-family:'Amiri',serif;font-size:1.3rem;color:var(--crimson);margin-bottom:.4rem}
+  footer small{font-size:.76rem;opacity:.8}
+
+  /* ===== أيقونات SVG موحّدة ===== */
+  .ico{width:1.15em;height:1.15em;vertical-align:-.2em;flex-shrink:0;display:inline-block}
+
+  /* ===== شريط التنقّل: مبدّل مقسوم ثابت بالأعلى، وشريط سفلي على الجوال ===== */
+  .page-switch{
+    position:sticky;top:0;z-index:55;display:flex;justify-content:center;
+    padding:.65rem 1rem;background:rgba(244,236,216,.9);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .seg-switch{
+    position:relative;display:grid;grid-template-columns:1fr 1fr;width:min(100%,470px);
+    background:var(--parchment-deep);border:1.5px solid var(--line);border-radius:999px;padding:4px;
+  }
+  .seg-ind{
+    position:absolute;top:4px;bottom:4px;inset-inline-start:4px;width:calc(50% - 4px);border-radius:999px;
+    background:var(--crimson);box-shadow:0 4px 12px rgba(140,58,43,.32);
+    transition:transform .35s cubic-bezier(.4,0,.2,1);
+  }
+  .page-switch[data-active="other"] .seg-ind{transform:translateX(-100%)}
+  .switch-btn{
+    position:relative;z-index:1;background:none;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:.5rem;
+    padding:.6rem .8rem;border-radius:999px;font-size:.95rem;font-weight:600;color:var(--ink-soft);
+    transition:color .25s;
+  }
+  .switch-btn .ico{width:1.25em;height:1.25em}
+  .switch-btn:hover{color:var(--crimson)}
+  .switch-btn.active,.switch-btn.active:hover{color:#fff}
+
+  @media (max-width:640px){
+    body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+    .page-switch{
+      position:fixed;top:auto;bottom:0;left:0;right:0;padding:.3rem .5rem calc(.3rem + env(safe-area-inset-bottom,0px));
+      border-bottom:none;border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(43,33,24,.12);
+    }
+    .seg-switch{width:100%;background:transparent;border:none;padding:0;border-radius:0}
+    .seg-ind{display:none}
+    .switch-btn{flex-direction:column;gap:.1rem;font-size:.74rem;padding:.4rem .3rem;border-radius:12px}
+    .switch-btn .ico{width:1.5em;height:1.5em}
+    .switch-btn.active,.switch-btn.active:hover{background:var(--crimson-soft);color:var(--crimson)}
+    .help-fab{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  }
+
+  .page{display:none}
+  .page.active{display:block}
+
+  /* ===== صفحة سائر المسائل ===== */
+  .topic-tabs{display:flex;gap:.55rem;flex-wrap:wrap;justify-content:center;margin:1.4rem 0 1.6rem}
+  .topic-tab{
+    font-size:.88rem;cursor:pointer;padding:.55rem 1.05rem;
+    border-radius:12px;border:2px solid var(--line);background:linear-gradient(165deg,#fdfaf1,#f1e7cf);
+    color:var(--ink-soft);transition:.2s;display:flex;align-items:center;gap:.4rem;
+  }
+  .topic-tab .ic{font-size:1rem}
+  .topic-tab:hover{border-color:var(--gold);transform:translateY(-2px)}
+  .topic-tab.active{border-color:var(--crimson);background:linear-gradient(165deg,#fff,#f6e4df);color:var(--crimson);font-weight:600}
+
+  .topic-panel{display:none}
+  .topic-panel.active{display:block;animation:fadein .3s}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  .mas-card{
+    background:linear-gradient(165deg,#fdfaf1,#f1e7cf);border:1px solid var(--line);border-radius:14px;
+    margin-bottom:.75rem;overflow:hidden;box-shadow:0 2px 8px rgba(43,33,24,.06);
+  }
+  .mas-head{
+    display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.9rem 1.1rem;cursor:pointer;
+    width:100%;background:none;border:none;text-align:start;
+  }
+  .mas-q{font-size:1rem;font-weight:600;color:var(--ink);flex:1}
+  .mas-badge{
+    font-size:.8rem;font-weight:700;padding:.3rem .75rem;border-radius:999px;
+    white-space:nowrap;border:1.5px solid;flex-shrink:0;
+  }
+  .mas-badge.before{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+  .mas-badge.after{background:var(--crimson-soft);border-color:var(--crimson);color:var(--crimson)}
+  .mas-badge.batil{background:#e6e3df;border-color:#3a3a3a;color:#3a3a3a}
+  .mas-badge.recover{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+  .mas-badge.neutral{background:#eef0ea;border-color:#7d7261;color:#544d3d}
+  .mas-card.no-detail .mas-head{cursor:default}
+  .mas-card.no-detail .mas-arrow{display:none}
+  .mas-arrow{font-size:.85rem;color:var(--gold);transition:.25s;flex-shrink:0}
+  .mas-card.open .mas-arrow{transform:rotate(180deg)}
+  /* طيّ سلس بلا حدّ أقصى مقطوع: grid-rows بدل max-height */
+  .mas-body{
+    display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease;
+  }
+  .mas-card.open .mas-body{grid-template-rows:1fr}
+  .mas-body-in{
+    overflow:hidden;min-height:0;
+    padding:0 1.1rem;font-size:.94rem;color:var(--ink-soft);
+    line-height:1.85;
+  }
+  .mas-card.open .mas-body-in{padding:.7rem 1.1rem 1.05rem;border-top:1px dashed var(--line)}
+  .mas-body-in b{color:var(--ink);font-weight:600}
+
+  .topic-count{font-size:.78rem;color:var(--ink-soft);text-align:center;margin-bottom:.8rem}
+
+  /* ===== صندوق البحث ===== */
+  .search-box{
+    display:flex;align-items:center;gap:.6rem;background:#fff;border:2px solid var(--gold);border-radius:16px;
+    padding:.9rem 1.1rem;box-shadow:0 4px 14px rgba(43,33,24,.1);margin-top:.4rem;
+  }
+  .search-ic{font-size:1.2rem;flex-shrink:0;opacity:.8}
+  #searchInput{
+    flex:1;border:none;outline:none;background:transparent;
+    font-size:1.05rem;color:var(--ink);
+  }
+  #searchInput::placeholder{color:#a89a7f}
+  .search-clear{cursor:pointer;color:var(--crimson);font-size:1rem;opacity:.7;flex-shrink:0;padding:.2rem;background:none;border:none}
+  .search-clear:hover{opacity:1}
+  #searchInput::-webkit-search-cancel-button{display:none}
+  .chips-caption{text-align:center;font-size:.8rem;color:var(--ink-soft);margin-top:.9rem;opacity:.85}
+
+  .suggest-chips{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:.45rem 0 .3rem}
+  .chip{
+    font-size:.82rem;cursor:pointer;padding:.4rem .9rem;
+    border-radius:999px;border:1.5px solid var(--line);background:var(--parchment);color:var(--ink-soft);transition:.2s;
+  }
+  .chip:hover{border-color:var(--gold);color:var(--crimson);transform:translateY(-1px)}
+
+  .search-empty{
+    text-align:center;color:var(--ink-soft);font-size:.98rem;
+    padding:1.8rem 1rem;opacity:.75;
+  }
+  .search-count{
+    font-size:.82rem;color:var(--ink-soft);margin:1.1rem 0 .6rem;text-align:center;
+  }
+  .search-count b{color:var(--crimson)}
+
+  /* بطاقة النتيجة: الحكم هو البطل (شريط ملوّن عريض) ثم السؤال والتفصيل */
+  .result-card{
+    --vc:var(--line);--vbg:transparent;
+    background:linear-gradient(165deg,#fdfaf1,#f1e7cf);border:2px solid var(--vc);border-radius:16px;
+    margin-bottom:.9rem;box-shadow:0 3px 12px rgba(43,33,24,.08);overflow:hidden;scroll-margin-block:90px;
+  }
+  .result-card.v-before{--vc:var(--green);--vbg:var(--green-soft)}
+  .result-card.v-after{--vc:var(--crimson);--vbg:var(--crimson-soft)}
+  .result-card.v-batil{--vc:#3a3a3a;--vbg:#e6e3df}
+  .result-card.v-recover{--vc:var(--blue);--vbg:var(--blue-soft)}
+  .result-card.v-neutral{--vc:#7d7261;--vbg:#eef0ea}
+  .rc-verdict{
+    display:flex;align-items:center;gap:.6rem;padding:.75rem 1.15rem;background:var(--vbg);color:var(--vc);
+    border-bottom:2px solid var(--vc);font-weight:700;font-size:clamp(1rem,3.6vw,1.2rem);line-height:1.5;
+  }
+  .rc-verdict .ico{width:1.4em;height:1.4em}
+  .rc-verdict .best-tag{margin:0 auto 0 0;font-size:.7rem;white-space:nowrap}
+  .rc-body{padding:.95rem 1.15rem 1.05rem}
+  .rc-topic{display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--gold);font-weight:600;margin-bottom:.35rem}
+  .rc-q{font-size:.98rem;font-weight:600;color:var(--ink);line-height:1.75}
+  .rc-d{font-size:.92rem;color:var(--ink-soft);line-height:1.85;margin-top:.55rem;border-top:1px dashed var(--line);padding-top:.55rem}
+
+  .browse-toggle{
+    display:block;margin:1.6rem auto 0;font-size:.9rem;cursor:pointer;
+    background:transparent;border:1.5px dashed var(--line);color:var(--ink-soft);border-radius:999px;padding:.6rem 1.4rem;transition:.2s;
+  }
+  .browse-toggle:hover{border-color:var(--gold);color:var(--crimson)}
+  .browse-area{margin-top:1.3rem}
+
+  /* ===== إبراز الكلمات المتطابقة في نتائج البحث ===== */
+  mark{background:rgba(201,162,39,.35);color:inherit;border-radius:3px;padding:0 .12em}
+
+  /* ===== وسم أفضل نتيجة ===== */
+  .best-tag{
+    display:inline-block;font-size:.72rem;font-weight:700;color:#fff;background:var(--gold);
+    border-radius:999px;padding:.14rem .7rem;margin-bottom:.45rem;
+  }
+
+  /* ===== ملاحظة الناقل (للمراجعة) ===== */
+  .review-note{
+    display:block;margin-top:.55rem;font-size:.82rem;color:#7a4a1d;
+    background:rgba(168,132,44,.12);border-inline-start:3px solid var(--gold);
+    padding:.4rem .75rem;border-radius:8px;
+  }
+
+  /* ===== زر فتح المسألة في التصفّح ===== */
+  .rc-goto{
+    display:inline-block;margin-top:.6rem;font-size:.8rem;color:var(--blue);cursor:pointer;
+    background:none;border:none;text-decoration:underline;text-underline-offset:3px;padding:.15rem .1rem;
+  }
+  .rc-goto:hover{color:var(--crimson)}
+
+  /* ===== وميض البطاقة عند الوصول إليها من البحث ===== */
+  .mas-card.flash{animation:flashcard 1.8s ease}
+  @keyframes flashcard{0%,55%{box-shadow:0 0 0 3px var(--gold-bright)}100%{box-shadow:0 2px 8px rgba(43,33,24,.06)}}
+
+  /* ===== تلميح السحب الأفقي للخط الزمني على الشاشات الصغيرة ===== */
+  .scroll-hint{display:none;text-align:center;font-size:.75rem;color:var(--ink-soft);margin-top:.15rem;opacity:.8}
+  @media (max-width:820px){.scroll-hint{display:block}}
+
+  /* ===== اقتراح مواضيع عند غياب النتائج ===== */
+  .empty-topics{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:.7rem}
+  .empty-topics .chip{border-color:var(--gold)}
+
+  /* ===== وصولية: إظهار التركيز للوحة المفاتيح ===== */
+  button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+    outline:3px solid var(--gold-bright);outline-offset:2px;
+  }
+
+  /* ===== احترام تفضيل تقليل الحركة ===== */
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  }
+
+  /* ===== حافة الحكم الملوّنة في بطاقات التصفّح ===== */
+  .mas-card{border-inline-start:6px solid var(--line);scroll-margin-block:90px}
+  .mas-card.v-before{border-inline-start-color:var(--green)}
+  .mas-card.v-after{border-inline-start-color:var(--crimson)}
+  .mas-card.v-batil{border-inline-start-color:#3a3a3a}
+  .mas-card.v-recover{border-inline-start-color:var(--blue)}
+  .mas-card.v-neutral{border-inline-start-color:#9a8f7d}
+  .topic-tab .ico,.chip .ico,.browse-toggle .ico{width:1.15em;height:1.15em}
+  .search-ic{color:var(--gold);display:flex}
+  .search-ic .ico{width:1.4rem;height:1.4rem}
+  .rukn-btn .icon{display:flex;justify-content:center;margin-bottom:.3rem;color:var(--gold)}
+  .rukn-btn .icon .ico{width:2.1rem;height:2.1rem}
+  .rukn-btn.active .icon{color:var(--crimson)}
+  .rc-goto .ico{width:.95em;height:.95em}
+  .browse-toggle{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-inline:auto}
+  .result .verdict .ico{width:1.1em;height:1.1em;vertical-align:-.12em}
+
+  /* ===== فاصل زخرفي ===== */
+  .orn-divider{display:flex;align-items:center;gap:.9rem;max-width:440px;margin:2.2rem auto;color:var(--gold)}
+  .orn-divider::before,.orn-divider::after{content:"";flex:1;height:1px}
+  .orn-divider::before{background:linear-gradient(270deg,var(--gold),transparent)}
+  .orn-divider::after{background:linear-gradient(90deg,var(--gold),transparent)}
+  .orn-divider .ico{width:1.5rem;height:1.5rem}
+  footer .orn-divider{margin:0 auto 1.1rem}
+
+  /* ===== مفتاح الألوان (الصفحة الثانية) ===== */
+  .key{margin:1.4rem 0 .4rem;padding:1.1rem 1.1rem 1rem;border:1.5px dashed var(--gold);border-radius:18px;
+       background:linear-gradient(165deg,#fffdf6,#f6edd6)}
+  .key-title{text-align:center;font-family:'Aref Ruqaa',serif;font-size:1.25rem;color:var(--crimson);margin-bottom:.7rem}
+  .key-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:.6rem}
+  .key-item{display:flex;align-items:center;gap:.7rem;padding:.55rem .75rem;border-radius:12px;border:1.5px solid var(--kc);background:var(--kbg);color:var(--kc)}
+  .key-item .key-ic{display:grid;place-items:center;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--kc);color:#fff;flex-shrink:0}
+  .key-item .key-ic .ico{width:1.2rem;height:1.2rem}
+  .key-item b{display:block;font-size:.92rem;line-height:1.4}
+  .key-item small{display:block;font-size:.76rem;color:var(--ink-soft);line-height:1.5}
+  .k-before{--kc:var(--green);--kbg:var(--green-soft)}
+  .k-after{--kc:var(--crimson);--kbg:var(--crimson-soft)}
+  .k-recover{--kc:var(--blue);--kbg:var(--blue-soft)}
+  .k-batil{--kc:#3a3a3a;--kbg:#e6e3df}
+  .k-neutral{--kc:#7d7261;--kbg:#eef0ea}
+  .key-stats{text-align:center;font-size:.82rem;color:var(--ink-soft);margin-top:.8rem}
+  /* بعد أول بحث يتقلّص المفتاح إلى شريط مضغوط */
+  .key.compact{padding:.5rem .7rem;border-style:solid;border-width:1px;margin-top:1rem}
+  .key.compact .key-title,.key.compact .key-stats,.key.compact small{display:none}
+  .key.compact .key-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem}
+  .key.compact .key-item{padding:.2rem .65rem .2rem .5rem;border-radius:999px;gap:.4rem}
+  .key.compact .key-item .key-ic{width:1.35rem;height:1.35rem}
+  .key.compact .key-item .key-ic .ico{width:.85rem;height:.85rem}
+  .key.compact .key-item b{font-size:.74rem;display:inline}
+
+  /* أثناء عرض النتائج تُخفى الأمثلة الجاهزة لتصعد النتائج إلى مجال النظر */
+  #page-other.has-query .suggest-chips,#page-other.has-query .chips-caption{display:none}
+  #page-other.has-query .key{margin-top:.9rem}
+  @media (max-width:640px){
+    .key-grid{grid-template-columns:1fr 1fr}
+    .key-item{padding:.45rem .55rem;gap:.5rem}
+    .key-item small{display:none}
+    .key-item b{font-size:.84rem}
+    .key-item .key-ic{width:1.8rem;height:1.8rem}
+    .key:not(.compact) .key-item:last-child{grid-column:1/-1}
+    .key.compact .key-grid{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:.2rem;scrollbar-width:none}
+    .key.compact .key-grid::-webkit-scrollbar{display:none}
+    .key.compact .key-item{flex-shrink:0}
+    .search-box{padding:.75rem .9rem}
+    #searchInput{font-size:1rem}
+  }
+
+  .qa-panel{border:1px solid var(--line);border-radius:20px;padding:1.4rem;background:#fdfaf1;margin-bottom:2rem}
+  .qa-panel h2,.qa-local-heading{color:var(--crimson);font-family:'Amiri',serif}
+  .qa-panel p{color:var(--ink-soft);margin:.5rem 0}
+  .qa-controls{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:1rem 0}
+  .qa-panel button,.qa-panel select{padding:.5rem .8rem;border:1px solid var(--line);border-radius:10px;background:var(--parchment);cursor:pointer;max-width:100%}
+  .qa-panel select{flex:1;min-width:180px}
+  .qa-panel button:disabled{opacity:.55;cursor:wait}
+  .qa-panel textarea{display:block;width:100%;resize:vertical;padding:.8rem;border:1px solid var(--line);border-radius:12px;background:#fffdf8;margin:.5rem 0;min-height:90px}
+  .qa-panel textarea:focus-visible,.qa-panel select:focus-visible,.qa-panel summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  #qaSend{background:var(--green);color:white;padding:.6rem 1.5rem}
+  .qa-turn{border-top:1px solid var(--line);padding:1rem 0;overflow-wrap:anywhere}
+  .qa-turn h3{font-size:1rem;color:var(--crimson)}
+  .qa-text,.qa-source{white-space:pre-wrap}
+  .qa-source{font:inherit;background:var(--parchment);padding:.8rem;border-radius:8px;max-height:320px;overflow:auto}
+  .qa-panel details{margin:.6rem 0}
+  .qa-panel summary{cursor:pointer;color:var(--blue)}
+  .qa-ref{font-size:.85rem;margin:.3rem}
+  #qaStatus{min-height:1.8em}
+  @media(max-width:640px){.qa-panel{padding:1rem}.qa-controls select{flex-basis:100%}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+<symbol id="i-dome" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20v-5a8 8 0 0 1 16 0v5"/><path d="M2.5 20h19"/><path d="M12 7V3.5"/><path d="M10 20v-3a2 2 0 0 1 4 0v3"/></g></symbol>
+<symbol id="i-bow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="8" r="2.4" fill="currentColor"/><path d="M9.5 9.5h8.5"/><path d="M18 9.5v11"/><path d="M12 9.5l.8 7"/></g></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.6 4 5v13c3-.4 6 0 8 1.6 2-1.6 5-2 8-1.6V5c-3-.4-6 0-8 1.5z"/><path d="M12 6.5V19.5"/></g></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></g></symbol>
+<symbol id="i-scroll" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/></g></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></g></symbol>
+<symbol id="i-question" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1.9-1.1 1.8"/><path d="M12 17h.01"/></g></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></g></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.3"/><path d="M16 14.2a4.5 4.5 0 0 1 5 4.3"/></g></symbol>
+<symbol id="i-star8" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"/><rect x="6" y="6" width="12" height="12" transform="rotate(45 12 12)"/></g></symbol>
+<symbol id="i-wind" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h10a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 13h15a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 17h7"/></g></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6.5 12.5L12 18l5.5-5.5"/></g></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/></g></symbol>
+<symbol id="i-sujud" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.2" cy="17.4" r="2.2" fill="currentColor"/><path d="M7.5 16L16 8.5"/><path d="M16 8.5l4 10"/><path d="M3 20.8h18"/></g></symbol>
+<symbol id="i-salam" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M16 12H8"/><path d="M11 8.5L7.5 12 11 15.5"/></g></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13.5 6.5L19 12l-5.5 5.5"/></g></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M10.5 6.5L5 12l5.5 5.5"/></g></symbol>
+<symbol id="i-x-circle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></g></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9L4.5 13.5 9 18"/><path d="M4.5 13.5H14a4.5 4.5 0 0 0 0-9H9"/></g></symbol>
+<symbol id="i-check-circle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></g></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></g></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></g></symbol>
+<symbol id="i-chevron-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></g></symbol>
+<symbol id="i-goto" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></g></symbol>
+</svg>
+
+<!-- ===== دليل الاستخدام (يظهر عند فتح الأداة) ===== -->
+<div class="guide-overlay show" id="guideOverlay">
+  <div class="guide">
+    <div class="guide-head">
+      <div class="g-orn">۞</div>
+      <h2>كيف تستعمل الأداة؟</h2>
+      <p>دليلٌ سريع في ثلاث خطوات — اقرأه مرّة، ثم ابدأ</p>
+    </div>
+
+    <div class="guide-body">
+
+      <div class="g-step">
+        <div class="g-num">١</div>
+        <div class="g-txt">
+          اختر <b>الركن الذي نسيته</b> من الأزرار الثلاثة في الأعلى: السجود، أو الركوع، أو الفاتحة.
+          <span class="g-hint">اضغط الزرّ فيصير محدَّدًا بعلامة ✓، وعندها يظهر لك خطّ الصلاة.</span>
+        </div>
+      </div>
+
+      <div class="g-step">
+        <div class="g-num">٢</div>
+        <div class="g-txt">
+          على خطّ الصلاة، اضغط <b>المربّع الذي نسيتَ فيه</b> الركن.
+          <span class="g-hint">المربّعات المناسبة فقط تكون مضيئة وقابلة للضغط. هذا يحدّد رقم الركعة التي وقع فيها النسيان.</span>
+        </div>
+      </div>
+
+      <div class="g-step">
+        <div class="g-num">٣</div>
+        <div class="g-txt">
+          ثم اضغط <b>المربّع الذي تذكّرتَ فيه</b> أنك نسيت.
+          <span class="g-hint">وتظهر النتيجة مباشرةً بالأسفل، مع بيان الحكم وسببه. للبدء من جديد اضغط زرّ «↺ إعادة الاختيار».</span>
+        </div>
+      </div>
+
+      <div class="g-divider"><span>ماذا تعني ألوان النتيجة؟</span><span class="rule"></span></div>
+
+      <div class="g-colors">
+        <div class="g-color-row">
+          <span class="g-chip" style="border-color:var(--blue);background:var(--blue-soft)"></span>
+          <span class="g-cl"><b style="color:var(--blue)">أزرق — رجوع وإتمام</b><small>تذكّرتَ مبكرًا، فترجع وتأتي بالركن أثناء الصلاة.</small></span>
+        </div>
+        <div class="g-color-row">
+          <span class="g-chip" style="border-color:var(--green);background:var(--green-soft)"></span>
+          <span class="g-cl"><b style="color:var(--green)">أخضر — سجود قبل السلام</b><small>يُجبَر النقص بسجدتَي السهو قبل التسليم.</small></span>
+        </div>
+        <div class="g-color-row">
+          <span class="g-chip" style="border-color:var(--crimson);background:var(--crimson-soft)"></span>
+          <span class="g-cl"><b style="color:var(--crimson)">أحمر — سجود بعد السلام</b><small>يُجبَر النقص بسجدتَي السهو بعد التسليم.</small></span>
+        </div>
+        <div class="g-color-row">
+          <span class="g-chip" style="border-color:#3a3a3a;background:#e6e3df"></span>
+          <span class="g-cl"><b style="color:#3a3a3a">أسود — وجوب إعادة الصلاة</b><small>إذا تذكّرتَ بعد أن سلّمتَ من الصلاة.</small></span>
+        </div>
+      </div>
+
+      <div class="g-divider"><span>ما معنى الخطّين المتقطّعين؟</span><span class="rule"></span></div>
+
+      <div class="g-lines">
+        <div class="g-line-row">
+          <span class="g-dash" style="border-color:var(--blue)"></span>
+          <span class="g-cl"><b style="color:var(--blue)">خطّ «فوات التدارك»</b><small>قبله ترجع للركن، وبعده فات محلّه فتُلغى الركعة. يتحرّك حسب ركعة نسيانك.</small></span>
+        </div>
+        <div class="g-line-row">
+          <span class="g-dash" style="border-color:var(--gold)"></span>
+          <span class="g-cl"><b style="color:var(--gold)">خطّ «عقد الثالثة»</b><small>هو الحدّ الفاصل بين السجود «قبل السلام» و«بعد السلام».</small></span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="guide-foot">
+      <button class="guide-start" id="guideStart">فهمتُ، لنبدأ ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- زر إعادة فتح الدليل -->
+<button class="help-fab" id="helpFab"><span class="qmark">؟</span> كيف أستعمل الأداة</button>
+
+<nav class="page-switch" id="pageNav" data-active="arkan" aria-label="التنقّل بين الصفحتين">
+  <div class="seg-switch">
+    <span class="seg-ind" aria-hidden="true"></span>
+    <button class="switch-btn active" id="btnPageArkan" data-page="page-arkan" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-dome"/></svg><span>نسيان الأركان</span></button>
+    <button class="switch-btn" id="btnPageOther" data-page="page-other" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-scroll"/></svg><span>سائر مسائل السهو</span></button>
+  </div>
+</nav>
+
+<div class="page active" id="page-arkan">
+
+<header>
+  <div class="ornament">۞</div>
+  <h1>محاكي سجود السهو</h1>
+  <p class="sub">اختر الركن المنسيّ، ثم حدِّد بنفسك <b>متى نسيتَه</b> و<b>متى تذكّرتَه</b> على خطّ الصلاة — وشاهد الحكم يتغيّر أمامك</p>
+</header>
+
+<div class="wrap">
+
+  <!-- STEP 1 -->
+  <div class="step-label"><span class="n">١</span><h2>أيّ ركنٍ نسيت؟</h2><span class="rule"></span></div>
+  <div class="rukn-choices" id="ruknChoices">
+    <button class="rukn-btn" data-rukn="sajda">
+      <span class="icon"><svg class="ico" aria-hidden="true"><use href="#i-dome"/></svg></span><span class="t">السجود</span><span class="d">سجدة أو سجدتان</span>
+    </button>
+    <button class="rukn-btn" data-rukn="ruku">
+      <span class="icon"><svg class="ico" aria-hidden="true"><use href="#i-bow"/></svg></span><span class="t">الركوع</span><span class="d">نسي الركوع</span>
+    </button>
+    <button class="rukn-btn" data-rukn="fatiha">
+      <span class="icon"><svg class="ico" aria-hidden="true"><use href="#i-book"/></svg></span><span class="t">الفاتحة</span><span class="d">نسي قراءتها</span>
+    </button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-label"><span class="n">٢</span><h2>اضغط على خطّ الصلاة لتحديد اللحظتين</h2><span class="rule"></span></div>
+
+  <div class="board">
+    <p class="board-instr" id="boardInstr">اختر الركن أولًا لتظهر لك ركعات الصلاة.</p>
+
+    <div class="mode-tabs" id="modeTabs" style="display:none" role="tablist" aria-label="مرحلتا التحديد">
+      <button type="button" class="mode-tab" data-mode="forget" role="tab"><span class="badge-dot" style="background:var(--blue)"></span> ١) اختر متى نسيت</button>
+      <button type="button" class="mode-tab" data-mode="remember" role="tab"><span class="badge-dot" style="background:var(--gold)"></span> ٢) اختر متى تذكّرت</button>
+    </div>
+
+    <div class="tl-svg-wrap" id="svgWrap">
+      <div class="placeholder">— لم تختر ركنًا بعد —</div>
+    </div>
+    <div class="scroll-hint">⇠ اسحب أفقيًا لرؤية باقي الركعات</div>
+
+    <div class="legend" id="legend" style="display:none">
+      <span><i class="lbox" style="border-color:var(--blue);background:var(--blue-soft)"></i> لحظة النسيان</span>
+      <span><i class="lbox" style="border-color:var(--gold);background:#f7eccf"></i> لحظة التذكّر</span>
+      <span><i class="lbox" style="border-color:var(--blue);background:repeating-linear-gradient(45deg,#fff,#fff 3px,var(--blue-soft) 3px,var(--blue-soft) 6px)"></i> فوات التدارك</span>
+      <span><i class="lbox" style="border-color:var(--gold);background:repeating-linear-gradient(45deg,#f7eccf,#f7eccf 3px,#fff 3px,#fff 6px)"></i> عقد الثالثة</span>
+    </div>
+
+    <div class="selectctl" id="selectctl"></div>
+
+    <button class="reset" id="resetBtn" style="display:none">↺ إعادة الاختيار</button>
+
+    <div class="result" id="result">
+      <div class="verdict" id="verdict"></div>
+      <div class="explain" id="explain"></div>
+      <div class="ruleline" id="ruleline"></div>
+    </div>
+  </div>
+
+  <div class="orn-divider" aria-hidden="true"><svg class="ico"><use href="#i-star8"/></svg></div>
+
+  <div class="rulebanner">
+    <b>القاعدة العامة للأركان الثلاثة:</b><br>
+    إن كان المنسيّ <b>من الأوليين</b> وتذكّر <b>قبل عقد الثالثة</b> ⟵ <span class="g">سجد قبل السلام</span> ، وإلّا ⟵ <b>سجد بعد السلام</b>.<br>
+    <span style="font-size:.92rem">ومعنى «عقد الثالثة»: للسجود والفاتحة هو <b>الرفع من ركوع الثالثة</b>، وللركوع هو <b>الانحناء لركوع الثالثة</b> (أي أبكر).</span>
+    <span style="font-size:.92rem;display:block;margin-top:.5rem;padding-top:.5rem;border-top:1px dashed var(--line)">
+      <b style="color:var(--blue)">قبل فوات محلّ التدارك</b> ⟵ يرجع ويأتي بالركن أثناء الصلاة، ثم يسجد بعد السلام للزيادة.
+    </span>
+  </div>
+
+</div>
+</div>
+<!-- /page-arkan -->
+
+<div class="page" id="page-other">
+<header>
+  <div class="ornament">۞</div>
+  <h1>سائر مسائل السهو</h1>
+  <p class="sub">اكتب وصف حالتك بكلماتك، وسيظهر لك الحكم المطابق فورًا — بحثٌ محليّ في الأداة نفسها، دون أي اتصال بالإنترنت</p>
+</header>
+
+<div class="wrap">
+
+  <section class="qa-panel" aria-labelledby="qaTitle">
+    <h2 id="qaTitle">اسأل من مصادر المشروع</h2>
+    <p>اختر نموذجًا واسأل بكلماتك. تُرسل مصادر المشروع وسؤالك وسياق المحادثة إلى الخدمة المختارة عبر الإنترنت. افتح المراجع المرفقة لمراجعة الجواب.</p>
+    <form id="qaForm">
+      <div class="qa-controls">
+        <label for="qaModel">النموذج</label>
+        <select id="qaModel" disabled><option>جارٍ تحميل النماذج…</option></select>
+        <button type="button" id="qaReload">تحديث النماذج</button>
+        <button type="button" id="qaReset">محادثة جديدة</button>
+      </div>
+      <div id="qaConversation" aria-label="المحادثة"></div>
+      <label for="qaQuestion">سؤالك أو توضيحك</label>
+      <textarea id="qaQuestion" rows="3" maxlength="3000" required placeholder="مثال: نسيت السجود القبلي وتذكّرت بعد السلام، ماذا أفعل؟"></textarea>
+      <button type="submit" id="qaSend" disabled>أرسل السؤال</button>
+      <p id="qaStatus" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <h2 class="qa-local-heading">البحث المحلي دون اتصال</h2>
+  <div class="search-box" role="search">
+    <span class="search-ic" aria-hidden="true"><svg class="ico"><use href="#i-search"/></svg></span>
+    <input type="search" id="searchInput" aria-label="اكتب وصف حالتك للبحث في مسائل السهو" placeholder="اكتب حالتك… مثال: ضحكت وأنا أصلي" autocomplete="off">
+    <button type="button" class="search-clear" id="searchClear" style="display:none" aria-label="مسح البحث">✕</button>
+  </div>
+
+  <p class="chips-caption">أمثلة جاهزة — اضغط أيّها للتجربة:</p>
+  <div class="suggest-chips" id="suggestChips"></div>
+
+  <section class="key" id="colorKey" aria-label="مفتاح الألوان">
+    <p class="key-title">مفتاح الألوان</p>
+    <div class="key-grid">
+      <div class="key-item k-before"><span class="key-ic"><svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span><b>سجود قبل السلام</b><small>يُجبَر النقص بسجدتين قبل التسليم</small></span></div>
+      <div class="key-item k-after"><span class="key-ic"><svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg></span><span><b>سجود بعد السلام</b><small>يُجبَر الخلل بسجدتين بعد التسليم</small></span></div>
+      <div class="key-item k-recover"><span class="key-ic"><svg class="ico" aria-hidden="true"><use href="#i-undo"/></svg></span><span><b>رجوع وتدارك</b><small>تُصلح الأمر أثناء الصلاة</small></span></div>
+      <div class="key-item k-batil"><span class="key-ic"><svg class="ico" aria-hidden="true"><use href="#i-x-circle"/></svg></span><span><b>بطلان / إعادة</b><small>تبطل الصلاة أو تجب إعادتها</small></span></div>
+      <div class="key-item k-neutral"><span class="key-ic"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></span><span><b>لا شيء عليه</b><small>لا سجود ولا إعادة</small></span></div>
+    </div>
+    <p class="key-stats" id="keyStats"></p>
+  </section>
+
+  <div id="searchResults" aria-live="polite"></div>
+
+  <div class="orn-divider" aria-hidden="true"><svg class="ico"><use href="#i-star8"/></svg></div>
+  <button class="browse-toggle" id="browseToggle" aria-expanded="false" aria-controls="browseArea"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg> أو تصفّح كلّ المسائل حسب الموضوع <svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+
+  <div class="browse-area" id="browseArea" style="display:none">
+    <div class="topic-tabs" id="topicTabs" role="tablist" aria-label="مواضيع المسائل"></div>
+    <div id="topicPanels"></div>
+  </div>
+
+</div>
+</div>
+<!-- /page-other -->
+
+<footer>
+  <div class="orn-divider" aria-hidden="true"><svg class="ico"><use href="#i-star8"/></svg></div>
+  <div class="verse">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</div>
+  <small>دليلٌ تعليميّ على المشهور من فقه المذهب المالكي · يُرجَع في التحقيق إلى أهل العلم</small>
+</footer>
+
+<script>
+/* مساعد الأيقونات: يرسم رمزًا من الـsprite المضمَّن أعلى الصفحة */
+function ico(name){ return `<svg class="ico" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
+
+/* ===== التحكم في دليل الاستخدام ===== */
+(function(){
+  const overlay=document.getElementById('guideOverlay');
+  const startBtn=document.getElementById('guideStart');
+  const helpFab=document.getElementById('helpFab');
+  function openGuide(){overlay.classList.add('show');}
+  function closeGuide(){overlay.classList.remove('show');}
+  startBtn.addEventListener('click',closeGuide);
+  helpFab.addEventListener('click',openGuide);
+  // إغلاق عند الضغط على الخلفية المعتمة
+  overlay.addEventListener('click',e=>{ if(e.target===overlay)closeGuide(); });
+  // إغلاق بمفتاح Escape
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeGuide(); });
+})();
+
+/* ============================================================
+   نموذج الصلاة: نقسّم الصلاة الرباعية إلى "مراحل" زمنية مرتّبة.
+   كل مرحلة لها index متسلسل (t). نختار t للنسيان و t للتذكّر.
+   نقطة الفوات تُحدَّد حسب الركن:
+     - السجود/الفاتحة: تفوت بـ "الرفع من ركوع الركعة التالية"
+     - الركوع: يفوت بـ "الانحناء (الهويّ) لركوع الركعة التالية"
+   القاعدة: المنسي من الأوليين (ر١ أو ر٢) + التذكّر قبل عقد الثالثة => قبل السلام، وإلا بعد السلام.
+   عمليًا: "عقد الثالثة" = المرحلة الفاصلة. نحدد لكل ركن مرحلةَ الفوات tFaut.
+   إن كان التذكّر عند مرحلة < نقطة الفوات المرتبطة بركعة النسيان => أمكن التدارك (قبل أن يفوت).
+   لكن المطلوب من المستخدم: القاعدة العامة (قبل/بعد السلام) حسب موضع التذكّر مقابل "عقد الثالثة".
+   ============================================================ */
+
+/* مراحل الصلاة الرباعية بالترتيب الزمني.
+   نرمز لكل مرحلة بكائن {id, rakaa, label, type}
+   type: 'qiyam'(قيام/قراءة) | 'huwiy'(الهويّ للركوع/الانحناء) | 'ruku'(الركوع) | 'raf3'(الرفع من الركوع) | 'sujud'(السجود) | 'julus'(جلوس) | 'salam'
+*/
+function buildStages(){
+  const stages=[];
+  let id=0;
+  for(let r=1;r<=4;r++){
+    stages.push({id:id++,rakaa:r,type:'qiyam',label:'قيام وقراءة'});
+    stages.push({id:id++,rakaa:r,type:'huwiy',label:'الهُويّ للركوع'});
+    stages.push({id:id++,rakaa:r,type:'ruku',label:'الركوع'});
+    stages.push({id:id++,rakaa:r,type:'raf3',label:'الرفع من الركوع'});
+    stages.push({id:id++,rakaa:r,type:'sujud',label:'السجود'});
+  }
+  stages.push({id:id++,rakaa:5,type:'salam',label:'السلام'});
+  return stages;
+}
+const STAGES=buildStages();
+
+/* تحديد "نقطة عقد الثالثة" لكل ركن — وهي المرحلة التي إذا بلغها/تجاوزها التذكّرُ فقد فات الحكمُ "قبل السلام":
+   - للسجود/الفاتحة: عقد الثالثة = الرفع من ركوع الركعة الثالثة (raf3 في r=3)
+   - للركوع: عقد الثالثة = الانحناء/الهُويّ لركوع الركعة الثالثة (huwiy في r=3)
+   القاعدة: قبل السلام  <=>  (ركعة النسيان ∈ {1,2})  و  (مرحلة التذكّر  <  مرحلة عقد الثالثة)
+*/
+function aqdThalithaStageId(rukn){
+  if(rukn==='ruku'){
+    return STAGES.find(s=>s.rakaa===3 && s.type==='huwiy').id;
+  }
+  // sajda or fatiha
+  return STAGES.find(s=>s.rakaa===3 && s.type==='raf3').id;
+}
+
+/* موضع فوات محلّ التدارك حسب الركن وركعة النسيان:
+   - الركوع: يفوت بالانحناء (الهُويّ) لركوع الركعة التالية
+   - السجود والفاتحة: يفوت بالرفع من ركوع الركعة التالية
+   - إن كان النسيان في الركعة الرابعة فلا توجد ركعة تالية ⇒ لا فوات قبل السلام
+*/
+function fautTadarukStageId(rukn, forgetRakaa){
+  const nextRakaa = forgetRakaa + 1;
+  if(nextRakaa > 4) return null;
+  if(rukn==='ruku'){
+    return STAGES.find(s=>s.rakaa===nextRakaa && s.type==='huwiy').id;
+  }
+  return STAGES.find(s=>s.rakaa===nextRakaa && s.type==='raf3').id;
+}
+
+function recoverText(rukn){
+  if(rukn==='ruku'){
+    return `<div style="text-align:right;display:inline-block;max-width:600px">
+      ترجع <b>قائمًا</b> لتأتي بالركوع من قيام، ولو كنتَ ساجدًا أو جالسًا.
+      <br><span style="font-size:.95em">ويُندَب أن تقرأ شيئًا من القرآن (فاتحةً أو غيرها) ليقع الركوع عقِب القراءة. ولو رجعتَ محدودبًا صحّت صلاتك على المشهور.</span>
+    </div>`;
+  }
+  if(rukn==='sajda'){
+    return `<div style="text-align:right;display:inline-block;max-width:600px">
+      ترجع <b>جالسًا</b> وتأتي بالسجدة من جلوس.
+      <br><span style="display:inline-block;margin-top:.6rem;font-size:.92em;color:var(--ink-soft);background:rgba(168,132,44,.1);border-right:3px solid var(--gold);padding:.45rem .8rem;border-radius:0 8px 8px 0">
+      <b>ملاحظة:</b> إن كنتَ قد جلستَ للسجدة أولًا ثم قمتَ ونسيتَها، فلا تُعيد الجلوس بل تخرّ ساجدًا من غير جلوس.</span>
+    </div>`;
+  }
+  // fatiha
+  return `<div style="text-align:right;display:inline-block;max-width:600px">
+    ترجع وتقرأ الفاتحة، ثم تركع.
+  </div>`;
+}
+
+const RUKN_META={
+  sajda:{name:'السجود (سجدة أو سجدتان)', forgetTypes:['sujud'], aqdName:'الرفع من ركوع الركعة الثالثة'},
+  ruku:{name:'الركوع', forgetTypes:['ruku'], aqdName:'الانحناء لركوع الركعة الثالثة'},
+  fatiha:{name:'الفاتحة', forgetTypes:['qiyam'], aqdName:'الرفع من ركوع الركعة الثالثة'},
+};
+
+/* الحالة */
+let current=null;        // الركن
+let mode='forget';       // forget | remember
+let forgetStage=null;    // id المرحلة التي نُسي فيها الركن (تُحدّد ركعة النسيان)
+let rememberStage=null;  // id المرحلة التي تذكّر فيها
+
+const choices=document.getElementById('ruknChoices');
+const boardInstr=document.getElementById('boardInstr');
+const modeTabs=document.getElementById('modeTabs');
+const svgWrap=document.getElementById('svgWrap');
+const legend=document.getElementById('legend');
+const selectctl=document.getElementById('selectctl');
+const resetBtn=document.getElementById('resetBtn');
+const resultBox=document.getElementById('result');
+const verdictEl=document.getElementById('verdict');
+const explainEl=document.getElementById('explain');
+const rulelineEl=document.getElementById('ruleline');
+
+choices.addEventListener('click',e=>{
+  const btn=e.target.closest('.rukn-btn'); if(!btn)return;
+  document.querySelectorAll('.rukn-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  current=btn.dataset.rukn;
+  mode='forget'; forgetStage=null; rememberStage=null;
+  modeTabs.style.display='flex'; legend.style.display='flex'; resetBtn.style.display='block';
+  updateInstr();
+  render();
+  updateResult();
+});
+
+modeTabs.addEventListener('click',e=>{
+  const t=e.target.closest('.mode-tab'); if(!t)return;
+  mode=t.dataset.mode; updateInstr(); render();
+});
+
+resetBtn.addEventListener('click',()=>{
+  forgetStage=null; rememberStage=null; mode='forget'; updateInstr(); render(); updateResult();
+});
+
+function updateInstr(){
+  modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active-forget','active-remember','done'));
+  const ft=modeTabs.querySelector('[data-mode="forget"]');
+  const rt=modeTabs.querySelector('[data-mode="remember"]');
+  if(forgetStage!==null)ft.classList.add('done');
+  if(rememberStage!==null)rt.classList.add('done');
+  if(mode==='forget'){ft.classList.add('active-forget');}
+  else{rt.classList.add('active-remember');}
+
+  const rm=RUKN_META[current];
+  if(mode==='forget'){
+    boardInstr.innerHTML=`اضغط على <b>المرحلة التي نسيتَ فيها ${rm.name}</b> (ستحدِّد ركعة النسيان). الأماكن المُتاحة مُبرَزة.`;
+  }else{
+    boardInstr.innerHTML=`الآن اضغط على <b>المرحلة التي تذكّرتَ فيها</b> أنك نسيت ${rm.name}.`;
+  }
+}
+
+/* رسم الخط الزمني: نعرض 4 ركعات، كل ركعة شريط فيه مراحلها.
+   RTL: الركعة الأولى على اليمين. */
+function render(){
+  if(!current){return;}
+  const rm=RUKN_META[current];
+  const aqdId=aqdThalithaStageId(current);
+
+  // dimensions
+  const segW=34, segH=46, gapSeg=3, gapRak=22, padX=28, topPad=98, rowH=segH;
+  // count stages per rakaa = 5, four rakaas + salam
+  const W = padX*2 + 4*(5*(segW+gapSeg)) + 3*gapRak + (segW+gapSeg) /*salam*/ + 20;
+  const H = topPad + rowH + 96;
+  const baseY = topPad;
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="خط الصلاة الزمني">`;
+
+  // time direction note
+  svg+=`<text x="${W-padX}" y="22" text-anchor="start" style="font-size:12px;fill:var(--ink-soft)">⟸ يبدأ من اليمين (الأولى) إلى اليسار (السلام)</text>`;
+
+  // group stages by rakaa for titles, lay them out RTL
+  // We'll place stage 0 at the rightmost.
+  const totalSlots=STAGES.length;
+  // compute x for each stage id sequentially with rakaa gaps
+  let xCursor = W - padX; // start from right
+  const stageX={}; const stageW={};
+  let prevRakaa=1;
+  STAGES.forEach((s,i)=>{
+    if(s.rakaa!==prevRakaa){ xCursor -= gapRak; prevRakaa=s.rakaa; }
+    const w = segW;
+    xCursor -= w;
+    stageX[s.id]=xCursor; stageW[s.id]=w;
+    xCursor -= gapSeg;
+  });
+
+  // rakaa title bands
+  for(let r=1;r<=4;r++){
+    const segs=STAGES.filter(s=>s.rakaa===r);
+    const xs=segs.map(s=>stageX[s.id]);
+    const left=Math.min(...xs), right=Math.max(...xs)+segW;
+    const cx=(left+right)/2;
+    svg+=`<text class="rakaa-title" x="${cx}" y="${baseY-14}" text-anchor="middle" style="font-size:15px;fill:var(--gold)">الركعة ${['','الأولى','الثانية','الثالثة','الرابعة'][r]}</text>`;
+    // bracket
+    svg+=`<line x1="${left}" y1="${baseY-8}" x2="${right}" y2="${baseY-8}" stroke="var(--line)" stroke-width="2"/>`;
+  }
+
+  // determine which stage types are selectable in forget mode
+  const forgetOk=(s)=> RUKN_META[current].forgetTypes.includes(s.type);
+
+  // draw stages
+  STAGES.forEach(s=>{
+    const x=stageX[s.id], y=baseY, w=segW;
+    let fill='#efe6cf', stroke='var(--line)', txtFill='var(--ink-soft)';
+    const isSalam=s.type==='salam';
+    if(isSalam){fill='#e8ddc2';}
+
+    // highlight selectable in forget mode
+    let selectable=true, dim=false;
+    if(mode==='forget'){
+      selectable=forgetOk(s)&&!isSalam;
+      dim=!selectable;
+    }else{
+      selectable=!isSalam ? true : true; // remember can be any stage after forget (incl salam)
+      // remember must be at or after the forget stage
+      if(forgetStage!==null && s.id<forgetStage){selectable=false;dim=true;}
+    }
+
+    // selected states
+    const isForget = (forgetStage===s.id);
+    const isRemember = (rememberStage===s.id);
+    if(isForget){fill='var(--blue-soft)';stroke='var(--blue)';}
+    if(isRemember){fill='#f7eccf';stroke='var(--gold)';}
+    if(dim){txtFill='#b9ad95';}
+
+    // icon per type
+    const ICON={qiyam:'book',huwiy:'down',ruku:'bow',raf3:'up',sujud:'sujud',salam:'salam'};
+    const icon=ICON[s.type]||'book';
+    let icCol='var(--ink-soft)';
+    if(isForget)icCol='var(--blue)';
+    if(isRemember)icCol='var(--gold)';
+    if(dim)icCol='#b9ad95';
+
+    svg+=`<g class="seg" data-id="${s.id}" data-selectable="${selectable}" style="${selectable?'':'opacity:.5;cursor:not-allowed'}">
+      <rect x="${x}" y="${y}" width="${w}" height="${segH}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${(isForget||isRemember)?3:1.5}"/>
+      <use href="#i-${icon}" x="${x+w/2-10}" y="${y+(segH-20)/2}" width="20" height="20" style="color:${icCol}"/>
+      <text x="${x+w/2}" y="${y+segH+14}" text-anchor="middle" style="font-size:11px;font-weight:500;fill:${txtFill}">${stageLabelShort(s)}</text>
+    </g>`;
+  });
+
+  // draw "aqd thalitha" faut marker (vertical dashed line just BEFORE the aqd stage on the time axis)
+  // The condition for قبل السلام is: remember stage id < aqdId. So the boundary sits at aqdId's right edge.
+  const ax = stageX[aqdId]+segW+gapSeg/2;
+  svg+=`<g>
+    <line x1="${ax}" y1="${baseY-30}" x2="${ax}" y2="${baseY+segH+20}" stroke="var(--gold)" stroke-width="2.5" stroke-dasharray="5 4"/>
+    <rect x="${ax-58}" y="${baseY+segH+22}" width="116" height="20" rx="10" fill="var(--gold)"/>
+    <text x="${ax}" y="${baseY+segH+36}" text-anchor="middle" fill="#fff" style="font-size:10.5px;font-weight:600">عقد الثالثة</text>
+  </g>`;
+
+  // draw "fawat al-tadaruk" marker — متحرّك حسب ركعة النسيان (يظهر بعد اختيارها)
+  if(forgetStage!==null){
+    const fSeg = STAGES.find(s=>s.id===forgetStage);
+    const fautId = fautTadarukStageId(current, fSeg.rakaa);
+    if(fautId!==null){
+      const fx = stageX[fautId]+segW+gapSeg/2;
+      const sameAsAqd = (fautId===aqdId);
+      // إذا تطابقت النقطتان نُزِيح خط الفوات قليلاً لكي لا يختفي تحت خط عقد الثالثة
+      const fxDraw = sameAsAqd ? fx+5 : fx;
+      svg+=`<g>
+        <line x1="${fxDraw}" y1="${baseY-58}" x2="${fxDraw}" y2="${baseY+segH+10}" stroke="var(--blue)" stroke-width="2.5" stroke-dasharray="3 4"/>
+        <rect x="${fxDraw-62}" y="${baseY-78}" width="124" height="20" rx="10" fill="var(--blue)"/>
+        <text x="${fxDraw}" y="${baseY-64}" text-anchor="middle" fill="#fff" style="font-size:10.5px;font-weight:600">فوات التدارك</text>
+      </g>`;
+    }
+  }
+
+  svg+=`</svg>`;
+  svgWrap.innerHTML=svg;
+
+  svgWrap.querySelectorAll('.seg').forEach(g=>{
+    g.addEventListener('click',()=>{
+      if(g.dataset.selectable!=='true')return;
+      const id=parseInt(g.dataset.id);
+      if(mode==='forget'){
+        forgetStage=id;
+        if(rememberStage!==null && rememberStage<forgetStage)rememberStage=null;
+        mode='remember';
+      }else{
+        if(forgetStage!==null && id<forgetStage)return;
+        rememberStage=id;
+      }
+      updateInstr(); render(); updateResult(); updatePills();
+    });
+  });
+  updatePills();
+}
+
+function stageLabelShort(s){
+  if(s.type==='salam')return 'السلام';
+  const map={qiyam:'قراءة',huwiy:'هُويّ',ruku:'ركوع',raf3:'رفع',sujud:'سجود'};
+  return map[s.type]||s.label;
+}
+
+function updatePills(){
+  let html='';
+  if(forgetStage!==null){
+    const s=STAGES.find(x=>x.id===forgetStage);
+    html+=`<span class="pill forget">نسيتُ في: <b>الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}</b> <span class="x" data-clear="forget">✕</span></span>`;
+  }
+  if(rememberStage!==null){
+    const s=STAGES.find(x=>x.id===rememberStage);
+    const lbl=s.type==='salam'?'بعد السلام':`الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}`;
+    html+=`<span class="pill remember">تذكّرتُ في: <b>${lbl}</b> <span class="x" data-clear="remember">✕</span></span>`;
+  }
+  selectctl.innerHTML=html;
+  selectctl.querySelectorAll('.x').forEach(x=>{
+    x.addEventListener('click',()=>{
+      if(x.dataset.clear==='forget'){forgetStage=null;rememberStage=null;mode='forget';}
+      else{rememberStage=null;mode='remember';}
+      updateInstr();render();updateResult();
+    });
+  });
+}
+function rakaaName(r){return ['','الأولى','الثانية','الثالثة','الرابعة'][r];}
+
+function updateResult(){
+  if(forgetStage===null||rememberStage===null){
+    resultBox.classList.remove('show');return;
+  }
+  const fS=STAGES.find(s=>s.id===forgetStage);
+  const rS=STAGES.find(s=>s.id===rememberStage);
+  const aqdId=aqdThalithaStageId(current);
+  const fautId=fautTadarukStageId(current, fS.rakaa);
+  const rm=RUKN_META[current];
+
+  // التذكّر بعد السلام => وجوب إعادة الصلاة (لا غير)
+  if(rS.type==='salam'){
+    resultBox.className='result show batil';
+    verdictEl.textContent='وجوب إعادة الصلاة';
+    explainEl.innerHTML='';
+    rulelineEl.innerHTML='';
+    resultBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
+  // التذكّر قبل فوات محلّ التدارك => رجوع وإتمام الركن + سجود بعدي للزيادة
+  if(fautId === null || rememberStage < fautId){
+    resultBox.className='result show recover';
+    verdictEl.innerHTML=ico('undo')+' رجوع وإتمام الركن';
+    explainEl.innerHTML=recoverText(current);
+    rulelineEl.innerHTML='ثم <b style="color:var(--crimson)">يسجد بعد السلام</b> للزيادة الحاصلة بالرجوع.';
+    resultBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
+  const fromAwwaliyyin = (fS.rakaa===1||fS.rakaa===2);
+  const beforeAqd = (rememberStage < aqdId);
+  const qablaSalam = fromAwwaliyyin && beforeAqd;
+
+  resultBox.className='result show '+(qablaSalam?'before':'after');
+  verdictEl.innerHTML = ico(qablaSalam?'arrow-right':'arrow-left')+' '+(qablaSalam?'سجودٌ قبل السلام':'سجودٌ بعد السلام');
+
+  const cond1 = fromAwwaliyyin
+    ? `<span class="tag-yes">نعم</span> — النسيان في الركعة ${rakaaName(fS.rakaa)} (من الأوليين)`
+    : `<span class="tag-no">لا</span> — النسيان في الركعة ${rakaaName(fS.rakaa)} (من الأخريين)`;
+  const cond2 = beforeAqd
+    ? `<span class="tag-yes">نعم</span> — تذكّرتَ قبل «عقد الثالثة» (${rm.aqdName})`
+    : `<span class="tag-no">لا</span> — تذكّرتَ بعد «عقد الثالثة» (${rm.aqdName})`;
+
+  explainEl.innerHTML=`
+    <div style="text-align:right;display:inline-block">
+      <div>① المنسيّ من الأوليين؟ ${cond1}</div>
+      <div>② التذكّر قبل عقد الثالثة؟ ${cond2}</div>
+    </div>`;
+
+  rulelineEl.innerHTML = qablaSalam
+    ? `تحقّق الشرطان معًا ⟵ <b style="color:var(--green)">السجود قبل السلام</b>`
+    : `لم يتحقّق الشرطان معًا ⟵ <b style="color:var(--crimson)">السجود بعد السلام</b>` +
+      (fromAwwaliyyin?'':'') ;
+}
+
+/* ============================================================
+   الصفحة الثانية: سائر مسائل السهو (غير نسيان الأركان)
+   ============================================================ */
+
+/* ===== مبدّل الصفحتين — بتوجيه عبر hash ليعمل زرّ الرجوع وتُشارك الروابط ===== */
+function showPage(which, updateHash=true){
+  const toArkan = which==='page-arkan';
+  document.getElementById('page-arkan').classList.toggle('active', toArkan);
+  document.getElementById('page-other').classList.toggle('active', !toArkan);
+  const bA=document.getElementById('btnPageArkan'), bO=document.getElementById('btnPageOther');
+  bA.classList.toggle('active', toArkan);  bA.setAttribute('aria-pressed', toArkan);
+  bO.classList.toggle('active', !toArkan); bO.setAttribute('aria-pressed', !toArkan);
+  document.getElementById('pageNav').setAttribute('data-active', toArkan ? 'arkan' : 'other');
+  // زر «كيف أستعمل الأداة» خاصّ بصفحة الأركان فقط
+  document.getElementById('helpFab').style.display = toArkan ? 'flex' : 'none';
+  if(!toArkan) renderOtherPageOnce();
+  if(updateHash){
+    const h = toArkan ? '#arkan' : '#other';
+    // داخل الإطار المعزول قد يُمنع تعديل الرابط أمنيًا؛ نحميه بـ try/catch
+    try{ if(location.hash!==h) location.hash=h; }catch(e){/* تجاهل: التبديل يعمل بلا رابط */}
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function applyHashRoute(){
+  let h='';
+  try{ h=location.hash; }catch(e){}
+  showPage(h==='#other' ? 'page-other' : 'page-arkan', false);
+}
+document.getElementById('btnPageArkan').addEventListener('click',()=>showPage('page-arkan'));
+document.getElementById('btnPageOther').addEventListener('click',()=>showPage('page-other'));
+window.addEventListener('hashchange',applyHashRoute);
+
+/* ===== بيانات المسائل (مع كلمات مفتاحية مرادفة تعين البحث المحلي) ===== */
+const TOPICS=[
+  {
+    id:'ziyada', icon:'plus', title:'الزيادة والنقصان في الركعات',
+    items:[
+      {q:'من تكلّم ساهيًا في صلاته', kw:['تكلمت','الكلام','نطقت','تحدثت أثناء الصلاة'], cls:'after', v:'سجود بعد السلام',
+       d:'يسجد بعد السلام لسهوه بالكلام.'},
+      {q:'من سلّم من ركعتين ساهيًا (قبل إتمام صلاته)', kw:['سلمت قبل الوقت','سلمت ناقص','سلمت من ركعتين'], cls:'after', v:'سجود بعد السلام',
+       d:'يُتمّ صلاته، ثم يسجد بعد السلام لهذه الزيادة السهويّة.'},
+      {q:'من زاد ركعة أو ركعتين سهوًا', kw:['زدت ركعة','صليت ركعة زيادة','صليت خمسا بدل اربع'], cls:'after', v:'سجود بعد السلام',
+       d:'تصحّ صلاته ويجبر النقص بسجود بعد السلام.'},
+      {q:'من زاد سهوًا عددًا من الركعات يساوي عدد ركعات صلاته', kw:['صليت ثمانيا بدل اربع','ضاعفت الركعات','زدت مثل صلاتي'], cls:'batil', v:'بطلان الصلاة',
+       d:'إذا كانت الزيادة السهويّة مساوية لأصل عدد ركعات الصلاة بطلت الصلاة. ويُلحَق الوتر في هذا الضابط بركعتين، والمغرب بأربع ركعات.'},
+      {q:'من قام إلى ثالثة ساهيًا وتذكّر قبل أن يفارق الجلوس بيديه وركبتيه', kw:['قمت سهوا وتذكرت بسرعة','قمت للثالثة ورجعت فورا'], cls:'recover', v:'رجوع بلا سجود',
+       d:'يرجع إلى الجلوس فورًا، ولا شيء عليه أصلًا؛ لأنه لم يفارق محلّ الجلوس بعدُ.'},
+      {q:'من قام إلى ثالثة ساهيًا وقد فارق الجلوس بيديه وركبتيه', kw:['قمت للثالثة سهوا واستقللت واقفا','نسيت التشهد الاوسط وقمت'], cls:'after', v:'تمادٍ ثم سجود',
+       d:'لا يرجع بل يتمادى في صلاته، ويسجد بعد السلام (أو قبله على قول) لهذه الزيادة.'},
+      {q:'من رجع إلى الجلوس بعد المفارقة ساهيًا أو عامدًا', kw:['رجعت بعدما قمت','رجعت للتشهد بعد القيام'], cls:'after', v:'سجود بعد السلام',
+       d:'لا شيء عليه من جهة البطلان، لكنه يسجد بعد السلام لهذا التردّد والزيادة الحاصلة برجوعه.'},
+    ]
+  },
+  {
+    id:'shakk', icon:'question', title:'الشكّ والوسوسة',
+    items:[
+      {q:'من شكّ في كمال صلاته', kw:['شككت هل اتممت صلاتي','لا ادري هل صليت كامل ام لا'], cls:'after', v:'يأتي بالمشكوك فيه + سجود بعد السلام',
+       d:'يأتي بما شكّ فيه احتياطًا، ثم يسجد بعد السلام.'},
+      {q:'من شكّ في السلام والشكّ قريب', kw:['شككت هل سلمت','لا ادري سلمت ام لا والوقت قريب'], cls:'neutral', v:'يسلّم بلا سجود',
+       d:'إن كان الشكّ قريبًا فإنه يسلّم فحسب، ولا سجود عليه.'},
+      {q:'من شكّ في السلام وقد طال الفصل', kw:['تذكرت بعد وقت طويل هل سلمت','شككت في السلام بعد مدة'], cls:'batil', v:'بطلان الصلاة',
+       d:'إذا طال الأمر بين الشكّ ومحلّه بطلت صلاته.'},
+      {q:'الموسوِس كثير الشكّ في صلاته', kw:['عندي وسواس في الصلاة','اشك دائما في صلاتي'], cls:'after', v:'سجود بعد السلام دائمًا',
+       d:'لا يُعرَض عن وسوسته، بل يسجد بعد السلام دائمًا، سواء كانت الوسوسة عن زيادة أو نقصان.'},
+      {q:'من شكّ في حدَث أو نجاسة أثناء الصلاة ثم تيقّن طهارته', kw:['شككت هل انتقض وضوئي وانا اصلي','شككت في نجاسة ثوبي'], cls:'neutral', v:'لا شيء عليه',
+       d:'مجرّد التفكير القصير في تحقّق الطهارة لا يؤثّر على الصلاة إذا انتهى إلى اليقين.'},
+    ]
+  },
+  {
+    id:'qiraa', icon:'book', title:'القراءة والفاتحة',
+    items:[
+      {q:'من كرّر الفاتحة في ركعته', kw:['قرات الفاتحة مرتين','كررت الفاتحة سهوا'], cls:'after', v:'تفصيل: ساهيًا سجود بعد السلام',
+       d:'ساهيًا: يسجد بعد السلام. عامدًا: قال الشيخ الأخضري إنّ الظاهر البطلان.',
+       note:'ملاحظة الناقل على قول العمد: «وظاهره ليس بظاهر» — فليُراجَع قبل الاعتماد.'},
+      {q:'من تذكّر ترك السرّ أو الجهر قبل الركوع', kw:['نسيت الجهر وتذكرت قبل الركوع','قرات سرا خطأ وتذكرت مبكرا'], cls:'after', v:'إعادة القراءة + سجود بعد السلام إن كانت الفاتحة',
+       d:'يعيد القراءة على الوجه الصحيح، ويسجد بعد السلام إن كان المتروك هو الفاتحة.'},
+      {q:'من تذكّر ترك السرّ أو الجهر بعد فوات محلّه بالركوع', kw:['تذكرت الجهر بعد الركوع','فات وقت تدارك الجهر او السر'], cls:'after', v:'سجود (قبل أو بعد السلام حسب المتروك)',
+       d:'يسجد لترك الجهر بعد السلام، ويسجد لترك السرّ قبل السلام.',
+       note:'تعليق الناقل: «أظنّ العكس» — فليُراجَع هذا التفصيل قبل الاعتماد.'},
+      {q:'من غلط في القرآن بكلمة من غير القرآن', kw:['اخطات بكلمة ليست من القران','ادخلت كلمة غريبة في القراءة'], cls:'after', v:'سجود بعد السلام',
+       d:'إدخال كلمة أجنبية عن القرآن أثناء القراءة يوجب سجود بعد السلام.'},
+      {q:'من غلط في القرآن بكلمة من القرآن نفسه', kw:['بدلت كلمة قرانية باخرى','اخطات في اية بايه اخرى'], cls:'neutral', v:'لا سجود، إلا بتغيّر اللفظ أو المعنى',
+       d:'لا سجود عليه ما لم يتغيّر اللفظ أو المعنى، فإن تغيّر سجد بعد السلام.'},
+      {q:'من زاد سورة في الركعتين الأخيرتين', kw:['قرات سورة في الثالثة او الرابعة'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'من قرأ سورتين فأكثر، أو خرج من سورة إلى أخرى، أو ركع قبل تمام السورة', kw:['قرات سورتين','انتقلت من سورة لسورة','ركعت قبل اكمال السورة'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'من تذكّر السورة بعد الانحناء للركوع', kw:['نسيت السورة وتذكرت بعد الركوع'], cls:'neutral', v:'لا يرجع لها', d:'يفوت محلّها بمجرد الانحناء، فلا يرجع إليها.'},
+      {q:'من وقف في القراءة ولم يُفتَح عليه أحد وليست الفاتحة', kw:['نسيت اية ولم يفتح احد علي','توقفت في السورة ولم اتذكر'], cls:'neutral', v:'يترك الآية ويكمل، فإن تعذّر ركع',
+       d:'يترك تلك الآية ويقرأ ما بعدها، فإن تعذّر عليه إكمال السورة ركع. ولا ينظر في المصحف حال الصلاة.'},
+      {q:'من وقف في قراءة الفاتحة ولم يستطع إكمالها وترك منها آية', kw:['نسيت اية من الفاتحة ولم اتذكرها'], cls:'before', v:'سجود قبل السلام',
+       d:'لا بدّ من إكمال الفاتحة؛ فإن ترك منها آية واحدة سجد قبل السلام، وإن ترك أكثر من ذلك بطلت صلاته.'},
+      {q:'من ترك أكثر من آية من الفاتحة', kw:['نسيت اكثر من اية من الفاتحة ولم اكملها'], cls:'batil', v:'بطلان الصلاة', d:''},
+      {q:'من فتح (لقّن) على غير إمامه', kw:['لقنت شخصا غير امامي','فتحت على مصل اخر'], cls:'batil', v:'بطلان الصلاة',
+       d:'ولا يجوز له أن يفتح على إمامه أيضًا إلا في حالتين: أن ينتظر إمامُه الفتحَ، أو أن يُفسِد تركُ الفتح المعنى.'},
+    ]
+  },
+  {
+    id:'sujud-amm', icon:'dome', title:'سجود السهو المنسيّ نفسه',
+    items:[
+      {q:'من نسي السجود القبلي حتى سلّم، والفصل قريب', kw:['نسيت سجود السهو القبلي وسلمت وتذكرت بسرعة'], cls:'before', v:'يسجده (قبليًا) رغم السلام',
+       d:'إذا كان الفصل قريبًا يأتي بالسجود القبلي المنسيّ رغم وقوع السلام.'},
+      {q:'من نسي السجود القبلي حتى سلّم، وقد طال الفصل', kw:['نسيت السجود القبلي وتذكرت بعد وقت طويل'], cls:'batil', v:'بطلان السجود، وبطلان الصلاة إن كان لثلاث سنن فأكثر',
+       d:'إذا طال الفصل بطل ذلك السجود، وتبطل الصلاة نفسها إن كان السجود لأجل ثلاث سنن مفوَّتة أو أكثر.'},
+      {q:'من نسي السجود البعدي', kw:['نسيت سجود السهو البعدي حتى الان','تذكرت سجود السهو بعد مدة طويلة'], cls:'recover', v:'يسجده ولو بعد وقت طويل',
+       d:'لا يسقط بطول الفصل؛ فيأتي به ولو بعد عام كامل.'},
+    ]
+  },
+  {
+    id:'nafila', icon:'moon', title:'صلاة النافلة (مسائل مستثناة)',
+    items:[
+      {q:'من نسي الفاتحة في النافلة وتذكّر بعد الركوع', kw:['نسيت الفاتحة في صلاة نافلة'], cls:'before', v:'تمادٍ + سجود قبل السلام',
+       d:'يتمادى في صلاته النافلة ولا يُلغي تلك الركعة، ويسجد قبل السلام لنقصان الفاتحة.'},
+      {q:'من نسي السورة أو السرّ أو الجهر في النافلة وتذكّر بعد الركوع', kw:['نسيت السورة في نافلة','جهرت او اسررت خطا في نافلة'], cls:'neutral', v:'تمادٍ بلا سجود',
+       d:'لا سجود عليه؛ لأنّ هذه الأمور الثلاثة في النافلة من باب الفضيلة، ولا سجود لترك فضيلة.'},
+      {q:'من قام لثالثة نافلة وتذكّر قبل عقد الركعة', kw:['قمت لثالثة في النافلة سهوا وتذكرت مبكرا'], cls:'after', v:'رجوع جالسًا + سجود بعد السلام',
+       d:'يرجع جالسًا ويسجد لسهوه بعد السلام لزيادة القيام، كما في الفريضة.'},
+      {q:'من عقد الركعة الثالثة من النفل', kw:['رفعت من ركوع الثالثة في النافلة سهوا'], cls:'neutral', v:'تمادٍ حتى يُتمّها أربعًا',
+       d:'يتمادى ويُتمّ نافلته أربع ركعات، سواء كانت ليلًا أو نهارًا.'},
+      {q:'من نسي ركنًا من النافلة ولم يتذكّره حتى سلّم وطال الفصل', kw:['نسيت ركوعا او سجودا في نافلة وتذكرت متاخرا'], cls:'neutral', v:'لا إعادة ولا سجود',
+       d:'لكونه وقع على وجه النسيان، بخلاف الفريضة.'},
+      {q:'من قطع النافلة عامدًا، أو ترك منها ركعة أو سجدة عامدًا', kw:['قطعت النافلة عمدا','تركت ركعة من النافلة عمدا'], cls:'batil', v:'وجوب الإعادة',
+       d:'تجب عليه إعادة تلك النافلة وجوبًا، لأنها ترتّبت في ذمّته بمجرّد الشروع فيها ثم تعمّده قطعها أو نقصها.'},
+    ]
+  },
+  {
+    id:'masbuq', icon:'users', title:'المسبوق',
+    items:[
+      {q:'المسبوق الذي أدرك مع الإمام أقلّ من ركعة', kw:['ادركت الامام في التشهد فقط','دخلت والامام ساجد'], cls:'neutral', v:'لا يسجد مع إمامه لا قبليًا ولا بعديًا',
+       d:'لا يترتّب عليه ما يترتّب على إمامه من سهوٍ قبله أو معه أو بعده، لأنه ليس مأمومًا حقيقةً في تلك الأجزاء.'},
+      {q:'إن سجد المسبوق مُدرِك أقلّ من ركعة مع إمامه', kw:['سجدت مع الامام رغم اني مسبوق بقليل'], cls:'batil', v:'بطلان صلاته (على المشهور)',
+       d:'لأنه زاد في صلاته ما ليس منها. وهذا إذا كان سجوده عمدًا أو جهلًا، لا سهوًا.'},
+      {q:'المسبوق الذي أدرك مع الإمام ركعة كاملة فأكثر', kw:['ادركت ركعة كاملة مع الامام وانا مسبوق'], cls:'before', v:'يسجد القبلي مع إمامه وجوبًا',
+       d:'يسجده معه ولو تركه إمامه، ولو لم يدرك المسبوق موجب هذا السجود بنفسه.'},
+      {q:'السجود البعدي للمسبوق المُدرِك ركعة فأكثر', kw:['متى يسجد المسبوق السجود البعدي'], cls:'after', v:'يؤخّره حتى يُتمّ صلاته',
+       d:'لا يجوز له أن يسجده مع الإمام، بل يؤخّره إلى أن يُكمل صلاته منفردًا.'},
+    ]
+  },
+  {
+    id:'witr', icon:'star8', title:'الوتر والشفع',
+    items:[
+      {q:'من شكّ هل هو في ركعة الوتر أو في ثانية الشفع', kw:['شككت في عدد ركعات الوتر','لا ادري هل هذه ثانية الشفع ام الوتر'], cls:'after', v:'يجعلها ثانية الشفع + سجود بعد السلام + وتر جديد',
+       d:'يجعل الركعة التي هو فيها ثانيةَ الشفع، مقتصرًا على الركعتين المتحقّقتين، ويسجد بعد السلام احتمالَ أن يكون قد أضاف ركعة الوتر إلى الشفع بلا فاصل سلام، ثم يوتر بعد ذلك.'},
+      {q:'من شفع وتره ساهيًا', kw:['صليت الوتر شفعا بالخطا'], cls:'after', v:'سجود بعد السلام ويُجزئه', d:''},
+      {q:'من شكّ هل شفع وتره أم لا', kw:['لا ادري هل شفعت وتري'], cls:'after', v:'قولان: يسجد ويُجزئه / أو يأتي بوتر آخر (وهو الأحبّ)',
+       d:'قيل: يسلّم ويسجد للسهو ويُجزئه. وقيل، وهو الأحبّ عند الناقل: يأتي بوتر آخر بعد أن يسجد ويُكمل الأولى.'},
+      {q:'من كان جالسًا وشكّ في أي ركعة هو من الشفع أو الوتر', kw:['شككت وانا جالس اي ركعة هذه'], cls:'after', v:'يأتي بركعة + سجود بعد السلام + وتر بواحدة',
+       d:'يأتي بركعة، ويسجد بعد السلام، ثم يوتر بواحدة، ولا يُستحبّ له إعادة الشفع.'},
+      {q:'من تذكّر في تشهّد وتره أنه نسي سجدة من شفعه', kw:['تذكرت في التشهد اني نسيت سجدة من الشفع'], cls:'after', v:'يشفع وتره + سجود لزيادة الجلوس + يوتر',
+       d:'يجعل وتره شفعًا، ثم يسجد لزيادة الجلوس الحاصلة، ثم يوتر من جديد.'},
+    ]
+  },
+  {
+    id:'awarid', icon:'wind', title:'عوارض أثناء الصلاة',
+    items:[
+      {q:'نقص فضيلة (أمر مستحبّ لا سنّة)', kw:['تركت مستحبا في الصلاة'], cls:'neutral', v:'لا سجود عليه', d:''},
+      {q:'الجهر بالقنوت', kw:['جهرت بالقنوت'], cls:'neutral', v:'لا شيء عليه', d:'رغم كون الجهر به مكروهًا.'},
+      {q:'الصلاة على النبيّ ﷺ زيادة على المشروع', kw:['اكثرت الصلاة على النبي في الصلاة'], cls:'neutral', v:'لا شيء عليه', d:'سواء فعل ذلك ساهيًا أو عامدًا.'},
+      {q:'الإشارة برأسه أو يده أثناء الصلاة', kw:['اشرت بيدي او راسي وانا اصلي'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'الضحك في الصلاة', kw:['ضحكت وانا اصلي'], cls:'batil', v:'بطلان الصلاة', d:''},
+      {q:'التبسّم في الصلاة', kw:['ابتسمت وانا اصلي'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'من انتبه لمتحدّث بجانبه قليلًا', kw:['استمعت لمتكلم بجانبي لحظة'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'العطاس حتى عطاس نفسه', kw:['عطست وانا اصلي','عطس بجانبي وانا اصلي'], cls:'neutral', v:'لا يُلتفَت إليه أصلًا', d:''},
+      {q:'التثاؤب في الصلاة', kw:['تثاءبت وانا اصلي'], cls:'neutral', v:'يسدّ فمه', d:'ولا ينفث إلا في ثوبه، دون أن يُخرج حروفًا.'},
+      {q:'الالتفات ساهيًا', kw:['التفت من غير قصد وانا اصلي'], cls:'neutral', v:'لا شيء عليه', d:''},
+      {q:'الالتفات عامدًا', kw:['التفت قصدا وانا اصلي'], cls:'neutral', v:'مكروه (لا يبطل)', d:''},
+      {q:'الاستدبار (استدبار القبلة)', kw:['استدبرت القبلة وانا اصلي'], cls:'batil', v:'بطلان الصلاة', d:''},
+      {q:'من صلّى بحرير أو ذهب، أو سرق، أو نظر إلى محرَّمات أثناء صلاته', kw:['كنت البس حريرا او ذهبا وانا اصلي','نظرت لمحرم وانا اصلي'], cls:'neutral', v:'صلاته صحيحة، وهو عاصٍ',
+       d:'يأثم بفعله المحرَّم، لكنّ ذلك لا يبطل صلاته.'},
+      {q:'النعاس الخفيف في الصلاة', kw:['شعرت بنعاس خفيف وانا اصلي'], cls:'neutral', v:'لا سجود عليه', d:''},
+      {q:'النعاس الثقيل (نوم ثقيل) في الصلاة', kw:['نمت نوما ثقيلا وانا اصلي','فقدت الشعور وانا اصلي'], cls:'batil', v:'إعادة الوضوء والصلاة',
+       d:'والنوم الثقيل هو ما يفقد به النائم شعوره، فلا يُحسّ بما يسقط من يده، ولا بمن جاء أو راح، ولا بسيلان ريقه.'},
+      {q:'التنهّت (التنفّس بأنين) في الصلاة، فرضًا أو نفلًا', kw:['تنفست بصوت وانا اصلي','تنهدت وانا اصلي'], cls:'neutral', v:'لا شيء عليه',
+       d:'إلا أن ينطق المتنهِّت في تنهّته بحرف عمدًا، فإنّ صلاته تبطل حينئذٍ.'},
+      {q:'أنين المريض والتنحنح للضرورة', kw:['تنحنحت للضرورة وانا اصلي','مريض يئن وهو يصلي'], cls:'neutral', v:'مغتفَران، لا تبطل بهما الصلاة',
+       d:'أمّا التنحنح لأجل الإفهام (لا للضرورة) فهو منكَر، لكنه لا يبطل الصلاة أيضًا.'},
+    ]
+  },
+];
+
+let otherPageRendered=false;
+function renderOtherPageOnce(){
+  if(otherPageRendered)return;
+  otherPageRendered=true;
+
+  const tabsEl=document.getElementById('topicTabs');
+  const panelsEl=document.getElementById('topicPanels');
+
+  tabsEl.innerHTML = TOPICS.map((t,i)=>
+    `<button type="button" class="topic-tab${i===0?' active':''}" data-idx="${i}" role="tab" aria-selected="${i===0}" aria-controls="panel-${i}">${ico(t.icon)} ${t.title}</button>`
+  ).join('');
+
+  panelsEl.innerHTML = TOPICS.map((t,i)=>`
+    <div class="topic-panel${i===0?' active':''}" data-idx="${i}" id="panel-${i}" role="tabpanel">
+      <div class="topic-count">${t.items.length} مسألة</div>
+      ${t.items.map((it,j)=>{
+        const inner=`
+            <span class="mas-q">${it.q}</span>
+            <span class="mas-badge ${it.cls}">${it.v}</span>
+            <span class="mas-arrow" aria-hidden="true">▾</span>`;
+        const bodyHtml=(it.d||it.note)?`<div class="mas-body"><div class="mas-body-in">${it.d||''}${it.note?`<span class="review-note">${it.note}</span>`:''}</div></div>`:'';
+        // البطاقات ذات التفصيل: رأسها زرّ حقيقي قابل للطي بلوحة المفاتيح
+        const head = bodyHtml
+          ? `<button type="button" class="mas-head" aria-expanded="false">${inner}</button>`
+          : `<div class="mas-head">${inner}</div>`;
+        return `<div class="mas-card v-${it.cls}${bodyHtml?'':' no-detail'}" data-topic="${i}" data-item="${j}">${head}${bodyHtml}</div>`;
+      }).join('')}
+    </div>
+  `).join('');
+
+  tabsEl.addEventListener('click',e=>{
+    const tab=e.target.closest('.topic-tab'); if(!tab)return;
+    activateTopicTab(tab.dataset.idx);
+  });
+
+  panelsEl.querySelectorAll('.mas-card .mas-head[aria-expanded]').forEach(head=>{
+    head.addEventListener('click',()=>{
+      const card=head.closest('.mas-card');
+      const open=card.classList.toggle('open');
+      head.setAttribute('aria-expanded', open);
+    });
+  });
+}
+
+function activateTopicTab(idx){
+  const tabsEl=document.getElementById('topicTabs');
+  const panelsEl=document.getElementById('topicPanels');
+  tabsEl.querySelectorAll('.topic-tab').forEach(x=>{
+    const on = x.dataset.idx===String(idx);
+    x.classList.toggle('active', on);
+    x.setAttribute('aria-selected', on);
+  });
+  panelsEl.querySelectorAll('.topic-panel').forEach(p=>p.classList.toggle('active', p.dataset.idx===String(idx)));
+}
+
+/* زرّ إظهار/إخفاء التصفّح — حالة مشتركة ليستعملها البحث أيضًا */
+let browseOpen=false;
+function setBrowseOpen(open){
+  browseOpen=open;
+  const toggle=document.getElementById('browseToggle');
+  document.getElementById('browseArea').style.display = open?'block':'none';
+  toggle.innerHTML = ico('grid')+' '+(open?'إخفاء التصفّح حسب الموضوع':'أو تصفّح كلّ المسائل حسب الموضوع')+' '+ico(open?'chevron-up':'chevron-down');
+  toggle.setAttribute('aria-expanded', open);
+  if(open) renderOtherPageOnce();
+}
+document.getElementById('browseToggle').addEventListener('click',()=>setBrowseOpen(!browseOpen));
+
+/* فتح مسألة بعينها داخل التصفّح انطلاقًا من نتيجة بحث */
+function openIssueInBrowse(ti, ii){
+  setBrowseOpen(true);
+  activateTopicTab(ti);
+  const card=document.querySelector(`.mas-card[data-topic="${ti}"][data-item="${ii}"]`);
+  if(!card)return;
+  const head=card.querySelector('.mas-head[aria-expanded]');
+  if(head && !card.classList.contains('open')){ card.classList.add('open'); head.setAttribute('aria-expanded',true); }
+  card.classList.remove('flash'); void card.offsetWidth; // إعادة تشغيل الوميض
+  card.classList.add('flash');
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ============================================================
+   محرّك بحث محليّ v2 — بدون أي نموذج لغوي (LLM)
+   تطبيع عربي + تجذيع خفيف (حذف السوابق واللواحق الشائعة)
+   + مطابقة بمسافة تحرير ≤ 1 + ترجيح IDF للكلمات النادرة
+   + إبراز الكلمات المتطابقة في النتائج.
+   ============================================================ */
+
+// تطبيع النص العربي: حذف التشكيل والتطويل، وتوحيد أشكال الحروف المتقاربة
+function normalizeAr(s){
+  return (s||'')
+    .replace(/[\u064B-\u0652\u0670\u0640]/g,'')   // تشكيل + تطويل
+    .replace(/[إأآٱ]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ؤ/g,'و')
+    .replace(/ئ/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/[^\u0621-\u064A0-9a-zA-Z\s]/g,' ')
+    .toLowerCase()
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+// تجذيع خفيف: حذف السوابق (ال، و، ب، ف، ك، ل…) واللواحق (ها، ت، ون، ين، ات…)
+// بشرط ألّا يقصر الجذع عن ٣ أحرف — يجعل «نسيتُ» تطابق «نسي» و«بالصلاة» تطابق «صلاه»
+const AR_PREFIXES=['وال','بال','كال','فال','لل','ال','و','ف','ب','ك','ل'];
+const AR_SUFFIXES=['كما','هما','تين','تان','ات','ون','ين','ان','ها','هم','هن','كم','نا','تم','ه','ك','ت','ي','ا'];
+function stemAr(w){
+  let s=w;
+  for(const p of AR_PREFIXES){
+    if(s.startsWith(p) && s.length-p.length>=3){ s=s.slice(p.length); break; }
+  }
+  for(const suf of AR_SUFFIXES){
+    if(s.endsWith(suf) && s.length-suf.length>=3){ s=s.slice(0, s.length-suf.length); break; }
+  }
+  return s;
+}
+
+const STOPWORDS=new Set(['في','من','الي','علي','عن','هل','ما','هو','هي','ثم','التي','الذي','هذا','هذه','انا','او','ان','لا','قد','كنت','كان','كانت','لي','له','بها','به','وانا','اني']);
+
+function tokenize(s){
+  return normalizeAr(s).split(' ')
+    .filter(t=>t.length>=2 && !STOPWORDS.has(t))
+    .map(stemAr)
+    .filter(t=>t.length>=2);
+}
+
+// مسافة تحرير ≤ 1 (فحص سريع بلا مصفوفة كاملة) لالتقاط الأخطاء الإملائية
+function within1(a,b){
+  if(a===b)return true;
+  const la=a.length, lb=b.length;
+  if(Math.abs(la-lb)>1)return false;
+  let i=0,j=0,diff=0;
+  while(i<la && j<lb){
+    if(a[i]===b[j]){i++;j++;continue;}
+    if(++diff>1)return false;
+    if(la>lb)i++; else if(lb>la)j++; else{i++;j++;}
+  }
+  return diff+(la-i)+(lb-j)<=1;
+}
+
+// درجة تطابق كلمتين مجذّعتين: تامّ 3، احتواء/خطأ إملائي (بطول ≥ ٤) 2،
+// وخطأ إملائي في جذع ثلاثي بشرط اتفاق الحرف الأول (تقليلًا للضجيج) 1
+function stemMatch(qt, rt){
+  if(qt===rt)return 3;
+  if(qt.length>=4 && rt.length>=4){
+    if(qt.includes(rt)||rt.includes(qt))return 2;
+    if(within1(qt,rt))return 2;
+  }
+  if(qt.length===3 && rt.length===3 && qt[0]===rt[0] && within1(qt,rt))return 1;
+  return 0;
+}
+
+// بناء فهرس مسطّح لجميع المسائل من TOPICS
+const SEARCH_INDEX=[];
+TOPICS.forEach((t,ti)=>{
+  t.items.forEach((it,ii)=>{
+    SEARCH_INDEX.push({
+      ti, ii, topicTitle:t.title, topicIcon:t.icon,
+      q:it.q, v:it.v, cls:it.cls, d:it.d, note:it.note,
+      primaryTokens:[...new Set(tokenize(it.q+' '+(it.kw||[]).join(' ')))],
+      secondaryTokens:[...new Set(tokenize(it.d||''))],
+    });
+  });
+});
+
+// ترجيح IDF: كلمة تظهر في مسألة واحدة أثمن من كلمة تظهر في عشرين
+const DF=new Map();
+SEARCH_INDEX.forEach(e=>{
+  new Set([...e.primaryTokens,...e.secondaryTokens]).forEach(t=>DF.set(t,(DF.get(t)||0)+1));
+});
+const N_DOCS=SEARCH_INDEX.length;
+function idf(t){ return Math.log(1 + N_DOCS/(DF.get(t)||1)); }
+
+function searchIssues(query){
+  const qTokens=tokenize(query);
+  if(qTokens.length===0)return {list:[], total:0, qTokens};
+  const scored=SEARCH_INDEX.map(entry=>{
+    let score=0, matched=0;
+    qTokens.forEach(qt=>{
+      let best=0;
+      entry.primaryTokens.forEach(rt=>{ const m=stemMatch(qt,rt); if(m) best=Math.max(best, m*2*idf(rt)); });
+      entry.secondaryTokens.forEach(rt=>{ const m=stemMatch(qt,rt); if(m) best=Math.max(best, m*idf(rt)); });
+      if(best>0)matched++;
+      score+=best;
+    });
+    return {entry, score, matched};
+  }).filter(r=>r.score>0)
+    .sort((a,b)=> b.matched-a.matched || b.score-a.score);
+  return {list:scored.slice(0,6), total:scored.length, qTokens};
+}
+
+// إبراز الكلمات المتطابقة داخل نصّ العرض (يعمل على نص خالٍ من الوسوم)
+function highlightText(text, qTokens){
+  if(!text)return '';
+  return text.split(/(\s+)/).map(part=>{
+    if(/^\s*$/.test(part))return part;
+    const stem=stemAr(normalizeAr(part));
+    if(stem.length>=2 && qTokens.some(qt=>stemMatch(qt,stem)>0))return '<mark>'+part+'</mark>';
+    return part;
+  }).join('');
+}
+
+// عند غياب النتائج: اقتراح أقرب المواضيع (أو أولها إن لم يوجد أي تقارب)
+function suggestTopicsFor(qTokens){
+  const sums=TOPICS.map((t,ti)=>{
+    let s=0;
+    SEARCH_INDEX.filter(e=>e.ti===ti).forEach(e=>{
+      qTokens.forEach(qt=>{
+        e.primaryTokens.forEach(rt=>{ s+=stemMatch(qt,rt); });
+      });
+    });
+    return {ti, s};
+  }).sort((a,b)=>b.s-a.s);
+  const picked = sums[0] && sums[0].s>0 ? sums.slice(0,3).filter(x=>x.s>0) : sums.slice(0,3);
+  return picked.map(x=>x.ti);
+}
+
+const VERDICT_ICON={before:'arrow-right',after:'arrow-left',batil:'x-circle',recover:'undo',neutral:'check-circle'};
+
+function renderSearchResults(query){
+  const resultsEl=document.getElementById('searchResults');
+  const clearBtn=document.getElementById('searchClear');
+  clearBtn.style.display = query.trim() ? 'inline' : 'none';
+  document.getElementById('colorKey').classList.toggle('compact', !!query.trim());
+  const pageOtherEl=document.getElementById('page-other');
+  const hadQuery=pageOtherEl.classList.contains('has-query');
+  pageOtherEl.classList.toggle('has-query', !!query.trim());
+  if(!hadQuery && query.trim()){
+    // أول بحث: نُصعِد مربع البحث إلى أعلى الشاشة فتظهر النتائج دون تمرير يدوي
+    const box=document.querySelector('.search-box');
+    const y=box.getBoundingClientRect().top+window.scrollY-(window.innerWidth>640?84:16);
+    window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+  }
+
+  if(!query.trim()){ resultsEl.innerHTML=''; return; }
+
+  const {list, total, qTokens}=searchIssues(query);
+
+  if(list.length===0){
+    const topicBtns=suggestTopicsFor(qTokens).map(ti=>
+      `<button type="button" class="chip" data-goto-topic="${ti}">${ico(TOPICS[ti].icon)} ${TOPICS[ti].title}</button>`
+    ).join('');
+    resultsEl.innerHTML=`<div class="search-empty">لم نجد مسألة مطابقة لوصفك. جرّب كلمات أخرى، أو ابدأ من هذه المواضيع:
+      <div class="empty-topics">${topicBtns}</div></div>`;
+    return;
+  }
+
+  const countLine = total>list.length
+    ? `أقرب <b>${list.length}</b> نتائج من أصل ${total} مسألة قريبة:`
+    : `وجدنا <b>${list.length}</b> ${list.length===1?'مسألة قريبة':'مسائل قريبة'} من وصفك:`;
+
+  resultsEl.innerHTML =
+    `<div class="search-count">${countLine}</div>` +
+    list.map((r,idx)=>`
+      <article class="result-card v-${r.entry.cls}">
+        <div class="rc-verdict">
+          ${ico(VERDICT_ICON[r.entry.cls]||'check-circle')}
+          <span>${r.entry.v}</span>
+          ${idx===0?'<span class="best-tag">الأقرب لوصفك ✦</span>':''}
+        </div>
+        <div class="rc-body">
+          <div class="rc-topic">${ico(r.entry.topicIcon)} ${r.entry.topicTitle}</div>
+          <div class="rc-q">${highlightText(r.entry.q,qTokens)}</div>
+          ${r.entry.d?`<div class="rc-d">${highlightText(r.entry.d,qTokens)}</div>`:''}
+          ${r.entry.note?`<span class="review-note">${r.entry.note}</span>`:''}
+          <button type="button" class="rc-goto" data-ti="${r.entry.ti}" data-ii="${r.entry.ii}">عرضها ضمن موضوعها ${ico('goto')}</button>
+        </div>
+      </article>
+    `).join('');
+}
+
+const EXAMPLE_QUERIES=[
+  'ضحكت وأنا أصلي',
+  'شككت هل صليت ثلاثًا أم أربعًا',
+  'نسيت سجود السهو حتى سلّمت',
+  'تكلمت ساهيًا في الصلاة',
+  'نمت نومًا ثقيلًا وأنا أصلي',
+  'أدركت الإمام في ركعة واحدة فقط',
+];
+
+(function(){
+  const input=document.getElementById('searchInput');
+  const clearBtn=document.getElementById('searchClear');
+  const chipsEl=document.getElementById('suggestChips');
+  const resultsEl=document.getElementById('searchResults');
+
+  chipsEl.innerHTML = EXAMPLE_QUERIES.map(ex=>`<button type="button" class="chip">${ex}</button>`).join('');
+  chipsEl.addEventListener('click',e=>{
+    const chip=e.target.closest('.chip'); if(!chip)return;
+    input.value=chip.textContent;
+    renderSearchResults(input.value);
+    input.focus();
+  });
+
+  const nIssues=TOPICS.reduce((a,t)=>a+t.items.length,0);
+  document.getElementById('keyStats').textContent = `${nIssues.toLocaleString('ar-EG')} مسألة في ${TOPICS.length.toLocaleString('ar-EG')} مواضيع — اكتب حالتك أو اختر مثالًا من الأعلى`;
+
+  // debounce ١٥٠ مللي ثانية حتى لا يُعاد البحث مع كل ضغطة زرّ
+  let searchTimer;
+  input.addEventListener('input',()=>{
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(()=>renderSearchResults(input.value),150);
+  });
+  input.addEventListener('search',()=>renderSearchResults(input.value)); // زرّ المسح الأصلي في بعض المتصفحات
+
+  clearBtn.addEventListener('click',()=>{ input.value=''; renderSearchResults(''); input.focus(); });
+
+  // تفويض النقر: «عرضها ضمن موضوعها» + شرائح المواضيع في حالة اللانتائج
+  resultsEl.addEventListener('click',e=>{
+    const go=e.target.closest('.rc-goto');
+    if(go){ openIssueInBrowse(+go.dataset.ti, +go.dataset.ii); return; }
+    const tchip=e.target.closest('[data-goto-topic]');
+    if(tchip){ setBrowseOpen(true); activateTopicTab(tchip.dataset.gotoTopic);
+      document.getElementById('browseArea').scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+})();
+
+/* ===== تهيئة أولية: تطبيق المسار من الرابط، وإخفاء الدليل إن فُتح رابط الصفحة الثانية مباشرة ===== */
+let initHash='';
+try{ initHash=location.hash; }catch(e){}
+if(initHash==='#other'){
+  document.getElementById('guideOverlay').classList.remove('show');
+}
+applyHashRoute();</script>
+
+<script src="./config.js"></script>
+<script>
+(() => {
+  const form=document.getElementById('qaForm'), model=document.getElementById('qaModel');
+  const question=document.getElementById('qaQuestion'), send=document.getElementById('qaSend');
+  const status=document.getElementById('qaStatus'), conversation=document.getElementById('qaConversation');
+  const reset=document.getElementById('qaReset'), reload=document.getElementById('qaReload');
+  let history=[], pending=false, turn=0;
+  const configuredBase=String(window.SAHW_CONFIG?.apiBaseUrl||'').replace(/\/+$/,'');
+  const isLocal=['localhost','127.0.0.1'].includes(location.hostname);
+  const apiBase=isLocal?'':configuredBase;
+  const apiUrl=route=>apiBase+route;
+  const digits=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+  const element=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
+  function controls(){
+    send.disabled=pending || !model.value || model.selectedOptions[0]?.disabled;
+    model.disabled=pending; reset.disabled=pending; reload.disabled=pending;
+    question.disabled=pending;
+    form.setAttribute('aria-busy',String(pending));
+  }
+  async function loadModels(){
+    if(location.protocol==='file:'){
+      status.textContent='للأسئلة الموثّقة، شغّل الخادم بالأمر npm start ثم افتح عنوانه في المتصفح. البحث المحلي يعمل هنا دون اتصال.';
+      model.replaceChildren(element('option','يتطلب تشغيل الخادم'));
+      model.disabled=true;send.disabled=true;reload.disabled=true;return;
+    }
+    const previous=model.value;
+    if(!isLocal && !configuredBase){
+      status.textContent='الأسئلة الموثّقة ستتاح بعد ربط خدمة الإجابة. يمكنك الآن استعمال المحاكي والبحث المحلي.';
+      model.replaceChildren(element('option','خدمة الإجابة غير متصلة بعد'));
+      model.disabled=true;send.disabled=true;reload.disabled=true;return;
+    }
+    pending=true;controls();status.textContent='جارٍ التحقق من النماذج…';
+    try{
+      const response=await fetch(apiUrl('/api/models'),{signal:AbortSignal.timeout(20000)});
+      if(!response.ok)throw new Error('تعذّر تحميل النماذج. تحقق من تشغيل الخادم.');
+      const data=await response.json();
+      model.replaceChildren();
+      for(const [provider,label] of [['groq','Groq'],['command','Command Code']]){
+        const group=element('optgroup');group.label=label;
+        for(const m of data.models.filter(m=>m.provider===provider)){
+          const option=element('option',m.label+(m.available?'':' — '+m.reason));
+          option.value=m.key;option.disabled=!m.available;group.append(option);
+        }
+        model.append(group);
+      }
+      const available=[...model.options].filter(o=>!o.disabled);
+      model.value=available.some(o=>o.value===previous)?previous:(available[0]?.value||'');
+      status.textContent=available.length?'اختر النموذج ثم أرسل سؤالك.':'لا توجد نماذج متاحة. تحقق من المفاتيح والاتصال ثم حدّث القائمة.';
+    }catch(error){model.replaceChildren();status.textContent=error.name==='TimeoutError'?'انتهت مهلة تحميل النماذج. أعد المحاولة.':error.message;}
+    finally{pending=false;controls();}
+  }
+  reload.addEventListener('click',loadModels);
+  model.addEventListener('change',()=>{controls();status.textContent='سيجيب النموذج المختار مع مراعاة سياق المحادثة الحالية.';});
+  reset.addEventListener('click',()=>{history=[];conversation.replaceChildren();question.value='';status.textContent='بدأت محادثة جديدة.';question.focus();});
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(pending || !question.value.trim() || !model.value)return;
+    if(history.length>=12){status.textContent='بلغت المحادثة ستة أسئلة. ابدأ محادثة جديدة للمتابعة.';return;}
+    const q=question.value.trim();pending=true;controls();status.textContent='جارٍ قراءة المصادر وإعداد الجواب…';
+    try{
+      const response=await fetch(apiUrl('/api/ask'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model.value,question:q,history}),signal:AbortSignal.timeout(130000)});
+      const answer=await response.json();
+      if(!response.ok)throw new Error(answer.error||'تعذّر إتمام الطلب.');
+      const article=element('article',null,'qa-turn');turn++;
+      article.append(element('h3','سؤالك'),element('p',q,'qa-text'),element('h3','الجواب · '+answer.model));
+      const refs=new Map(answer.sources.map((s,i)=>[s.id,{...s,number:i+1}]));
+      for(const section of answer.sections){
+        article.append(element('p',section.text,'qa-text'));
+        for(const id of section.sourceIds){
+          const source=refs.get(id),button=element('button','المصدر '+digits(source.number),'qa-ref');button.type='button';
+          button.addEventListener('click',()=>{const target=document.getElementById('qa-'+turnId+'-'+id);target.open=true;target.querySelector('summary').focus();target.scrollIntoView({block:'nearest',behavior:'smooth'});});
+          article.append(button);
+        }
+      }
+      const turnId=turn;
+      for(const source of refs.values()){
+        const detail=element('details');detail.id='qa-'+turnId+'-'+source.id;
+        detail.append(element('summary','المصدر '+digits(source.number)+' · '+source.file+' · الأسطر '+digits(source.start)+'–'+digits(source.end)),element('pre',source.text,'qa-source'));
+        article.append(detail);
+      }
+      conversation.append(article);
+      history.push({role:'user',content:q},{role:'assistant',content:JSON.stringify({status:answer.status,sections:answer.sections})});
+      question.value='';status.textContent=answer.status==='clarification'?'يحتاج الجواب إلى توضيح؛ أضفه في خانة السؤال.':'اكتمل الجواب. يمكنك فتح المصادر أو طرح سؤال متابعة.';
+    }catch(error){status.textContent=error.name==='TimeoutError'?'انتهت مهلة الانتظار. حاول مجددًا.':error.message;}
+    finally{pending=false;controls();question.focus();}
+  });
+  loadModels();
+})();
+</script>
+</body>
+</html>

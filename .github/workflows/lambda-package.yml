@@ -1,0 +1,27 @@
+name: Package AWS Lambda
+on:
+  push:
+    branches: [main]
+    paths: ['lambda.mjs', 'qa-service.mjs', 'docs/**', 'scripts/package-lambda.py', 'tests/**', '.github/workflows/lambda-package.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: npm test
+      - run: python scripts/package-lambda.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lambda-deployment
+          path: |
+            dist/salah-simulator-lambda.zip
+            dist/salah-simulator-lambda.zip.sha256

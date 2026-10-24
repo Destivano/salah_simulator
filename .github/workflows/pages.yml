@@ -1,0 +1,39 @@
+name: Deploy GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Optional Lambda Function URL. For future deployments also save QA_API_URL as a repository variable.'
+        required: false
+        type: string
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm test
+      - run: npm run build:site
+        env:
+          QA_API_URL: ${{ inputs.api_url || vars.QA_API_URL }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
