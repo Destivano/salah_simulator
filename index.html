@@ -1754,7 +1754,8 @@ applyHashRoute();</script>
         if(response.ok)break;
         const wait=answer.retryAfterSeconds;
         if(response.status===429 && attempt===0 && Number.isInteger(wait) && wait>0 && wait<=60){
-          const until=Date.now()+wait*1000;
+          // Allow a small margin for provider reset timing and network latency.
+          const until=Date.now()+(wait+2)*1000;
           while(Date.now()<until){
             status.textContent='بلغت الخدمة حد الاستخدام. ستُعاد المحاولة تلقائيًا بعد '+digits(Math.ceil((until-Date.now())/1000))+' ثانية، مع الاحتفاظ بمحادثتك.';
             await new Promise(resolve=>setTimeout(resolve,Math.min(1000,Math.max(1,until-Date.now()))));
