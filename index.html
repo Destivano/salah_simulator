@@ -105,7 +105,7 @@
   .pill b{font-weight:600}
   .pill.forget b{color:var(--blue)}
   .pill.remember b{color:var(--gold)}
-  .pill .x{cursor:pointer;color:var(--crimson);font-weight:700;opacity:.7}
+  .pill .x{cursor:pointer;color:var(--crimson);font-weight:700;opacity:.7;background:none;border:none;padding:.1rem .25rem;line-height:1;border-radius:6px}
   .pill .x:hover{opacity:1}
 
   .reset{
@@ -173,9 +173,9 @@
     position:fixed;inset:0;z-index:100;
     background:rgba(43,33,24,.55);backdrop-filter:blur(4px);
     display:flex;align-items:center;justify-content:center;padding:1rem;
-    opacity:0;pointer-events:none;transition:opacity .3s;
+    opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility 0s linear .3s;
   }
-  .guide-overlay.show{opacity:1;pointer-events:auto}
+  .guide-overlay.show{opacity:1;pointer-events:auto;visibility:visible;transition-delay:0s}
   .guide{
     background:linear-gradient(165deg,#fdfaf1,#f1e7cf);
     border:2px solid var(--gold);border-radius:22px;
@@ -184,6 +184,7 @@
     transform:translateY(20px) scale(.98);transition:transform .3s;
   }
   .guide-overlay.show .guide{transform:translateY(0) scale(1)}
+  .guide:focus{outline:none}
   .guide-head{
     text-align:center;padding:1.6rem 1.5rem 1rem;border-bottom:2px solid var(--line);
     position:sticky;top:0;background:linear-gradient(165deg,#fdfaf1,#f4ecd8);border-radius:22px 22px 0 0;
@@ -526,6 +527,11 @@
     #searchInput{font-size:1rem}
   }
 
+  /* ===== تركيز لوحة المفاتيح على مراحل الخط الزمني ===== */
+  .seg:focus{outline:none}
+  .seg:focus-visible rect{stroke:var(--gold-bright);stroke-width:4.5px}
+  .kb-hint{display:none;text-align:center;font-size:.76rem;color:var(--ink-soft);margin-top:.25rem;opacity:.85}
+  @media (hover:hover) and (pointer:fine){.kb-hint{display:block}}
   .qa-panel{border:1px solid var(--line);border-radius:20px;padding:1.4rem;background:#fdfaf1;margin-bottom:2rem}
   .qa-panel h2,.qa-local-heading{color:var(--crimson);font-family:'Amiri',serif}
   .qa-panel p{color:var(--ink-soft);margin:.5rem 0}
@@ -577,10 +583,10 @@
 
 <!-- ===== دليل الاستخدام (يظهر عند فتح الأداة) ===== -->
 <div class="guide-overlay show" id="guideOverlay">
-  <div class="guide">
+  <div class="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" tabindex="-1">
     <div class="guide-head">
       <div class="g-orn">۞</div>
-      <h2>كيف تستعمل الأداة؟</h2>
+      <h2 id="guideTitle">كيف تستعمل الأداة؟</h2>
       <p>دليلٌ سريع في ثلاث خطوات — اقرأه مرّة، ثم ابدأ</p>
     </div>
 
@@ -653,7 +659,7 @@
 </div>
 
 <!-- زر إعادة فتح الدليل -->
-<button class="help-fab" id="helpFab"><span class="qmark">؟</span> كيف أستعمل الأداة</button>
+<button class="help-fab" id="helpFab" aria-haspopup="dialog"><span class="qmark">؟</span> كيف أستعمل الأداة</button>
 
 <nav class="page-switch" id="pageNav" data-active="arkan" aria-label="التنقّل بين الصفحتين">
   <div class="seg-switch">
@@ -702,6 +708,7 @@
       <div class="placeholder">— لم تختر ركنًا بعد —</div>
     </div>
     <div class="scroll-hint">⇠ اسحب أفقيًا لرؤية باقي الركعات</div>
+    <p class="kb-hint">بلوحة المفاتيح: Tab للدخول إلى الخط، الأسهم للتنقّل بين المراحل، Enter أو Space للاختيار.</p>
 
     <div class="legend" id="legend" style="display:none">
       <span><i class="lbox" style="border-color:var(--blue);background:var(--blue-soft)"></i> لحظة النسيان</span>
@@ -714,7 +721,7 @@
 
     <button class="reset" id="resetBtn" style="display:none">↺ إعادة الاختيار</button>
 
-    <div class="result" id="result">
+    <div class="result" id="result" role="status" aria-live="polite" aria-hidden="true">
       <div class="verdict" id="verdict"></div>
       <div class="explain" id="explain"></div>
       <div class="ruleline" id="ruleline"></div>
@@ -806,21 +813,68 @@
 
 <script>
 /* مساعد الأيقونات: يرسم رمزًا من الـsprite المضمَّن أعلى الصفحة */
+/* أرقام هندية + صيغ العدّ العربية (٣–١٠ جمع، ١١ فأكثر مفرد) */
+function arNum(n){ return Number(n).toLocaleString('ar-EG'); }
+function arMasail(n){
+  if(n===1) return 'مسألة واحدة';
+  if(n===2) return 'مسألتان';
+  return arNum(n)+' '+(n<=10?'مسائل':'مسألة');
+}
 function ico(name){ return `<svg class="ico" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
 
 /* ===== التحكم في دليل الاستخدام ===== */
-(function(){
+/* نافذة الدليل: حوار مشروط (modal) بإدارة تركيز كاملة:
+   عند الفتح ينتقل التركيز إلى زر «فهمتُ» وتُعزل الخلفية (inert)،
+   ويُحبَس Tab داخل النافذة، وعند الإغلاق يعود التركيز إلى العنصر الذي فتحها. */
+const GUIDE_BACKGROUND='#pageNav, #page-arkan, #page-other, footer, #helpFab';
+let guideLastFocus=null;
+function setGuideOpen(open, opts){
+  const initial = !!(opts && opts.initial);
   const overlay=document.getElementById('guideOverlay');
   const startBtn=document.getElementById('guideStart');
   const helpFab=document.getElementById('helpFab');
-  function openGuide(){overlay.classList.add('show');}
-  function closeGuide(){overlay.classList.remove('show');}
-  startBtn.addEventListener('click',closeGuide);
-  helpFab.addEventListener('click',openGuide);
+  const bg=document.querySelectorAll(GUIDE_BACKGROUND);
+  if(open){
+    const a=document.activeElement;
+    guideLastFocus = (a && a!==document.body && !overlay.contains(a)) ? a : helpFab;
+    overlay.classList.add('show');
+    overlay.removeAttribute('inert'); overlay.removeAttribute('aria-hidden');
+    bg.forEach(el=>el.setAttribute('inert',''));
+    startBtn.focus();
+  }else{
+    overlay.classList.remove('show');
+    overlay.setAttribute('inert',''); overlay.setAttribute('aria-hidden','true');
+    bg.forEach(el=>el.removeAttribute('inert'));
+    if(initial) return;                       // أول تحميل بلا نافذة: لا نسرق التركيز
+    let target = (guideLastFocus && document.contains(guideLastFocus)) ? guideLastFocus : helpFab;
+    target.focus({preventScroll:true});
+    // زرّ المساعدة مخفيّ في الصفحة الثانية → نرجع إلى زرّ التنقّل النشط
+    if(document.activeElement!==target){
+      const fb=document.querySelector('.switch-btn.active'); if(fb) fb.focus({preventScroll:true});
+    }
+  }
+}
+(function(){
+  const overlay=document.getElementById('guideOverlay');
+  document.getElementById('guideStart').addEventListener('click',()=>setGuideOpen(false));
+  document.getElementById('helpFab').addEventListener('click',()=>setGuideOpen(true));
   // إغلاق عند الضغط على الخلفية المعتمة
-  overlay.addEventListener('click',e=>{ if(e.target===overlay)closeGuide(); });
-  // إغلاق بمفتاح Escape
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeGuide(); });
+  overlay.addEventListener('click',e=>{ if(e.target===overlay)setGuideOpen(false); });
+  // Escape على مستوى المستند: يعمل حتى لو انتقل التركيز إلى body بعد النقر على نصّ النافذة
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && overlay.classList.contains('show')){ e.preventDefault(); setGuideOpen(false); }
+  });
+  overlay.addEventListener('keydown',e=>{
+    if(!overlay.classList.contains('show'))return;
+    if(e.key!=='Tab')return;
+    // حبس Tab داخل النافذة
+    const f=[...overlay.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')];
+    if(!f.length)return;
+    const first=f[0], last=f[f.length-1], a=document.activeElement;
+    if(!overlay.contains(a)){ e.preventDefault(); first.focus(); }
+    else if(e.shiftKey && a===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && a===last){ e.preventDefault(); first.focus(); }
+  });
 })();
 
 /* ============================================================
@@ -839,6 +893,7 @@ function ico(name){ return `<svg class="ico" aria-hidden="true"><use href="#i-${
    نرمز لكل مرحلة بكائن {id, rakaa, label, type}
    type: 'qiyam'(قيام/قراءة) | 'huwiy'(الهويّ للركوع/الانحناء) | 'ruku'(الركوع) | 'raf3'(الرفع من الركوع) | 'sujud'(السجود) | 'julus'(جلوس) | 'salam'
 */
+/*LOGIC-START*/
 function buildStages(){
   const stages=[];
   let id=0;
@@ -880,6 +935,27 @@ function fautTadarukStageId(rukn, forgetRakaa){
   }
   return STAGES.find(s=>s.rakaa===nextRakaa && s.type==='raf3').id;
 }
+
+/* الحكم النهائي — دالة نقيّة لا تلمس الواجهة (تُختبر في tests/simulator.test.mjs).
+   المدخلات: الركن ('sajda'|'ruku'|'fatiha') + id مرحلة النسيان + id مرحلة التذكّر.
+   المخرجات: null إن نقص إدخال أو كان التذكّر قبل النسيان، وإلا كائن kind فيه:
+     'batil'   → تذكّر بعد السلام: وجوب إعادة الصلاة
+     'recover' → قبل فوات محلّ التدارك: رجوع وإتمام الركن (ثم سجود بعدي للزيادة)
+     'before'  → سجود قبل السلام (من الأوليين + قبل عقد الثالثة)
+     'after'   → سجود بعد السلام (ما سوى ذلك) */
+function computeVerdict(rukn, forgetId, rememberId){
+  if(forgetId===null || rememberId===null || rememberId<forgetId) return null;
+  const fS=STAGES.find(s=>s.id===forgetId);
+  const rS=STAGES.find(s=>s.id===rememberId);
+  const aqdId=aqdThalithaStageId(rukn);
+  const fautId=fautTadarukStageId(rukn, fS.rakaa);
+  if(rS.type==='salam') return {kind:'batil', fS, rS, aqdId, fautId};
+  if(fautId===null || rememberId<fautId) return {kind:'recover', fS, rS, aqdId, fautId};
+  const fromAwwaliyyin = (fS.rakaa===1||fS.rakaa===2);
+  const beforeAqd = (rememberId < aqdId);
+  return {kind:(fromAwwaliyyin && beforeAqd)?'before':'after', fS, rS, aqdId, fautId, fromAwwaliyyin, beforeAqd};
+}
+/*LOGIC-END*/
 
 function recoverText(rukn){
   if(rukn==='ruku'){
@@ -954,6 +1030,8 @@ function updateInstr(){
   if(rememberStage!==null)rt.classList.add('done');
   if(mode==='forget'){ft.classList.add('active-forget');}
   else{rt.classList.add('active-remember');}
+  ft.setAttribute('aria-selected', mode==='forget');
+  rt.setAttribute('aria-selected', mode==='remember');
 
   const rm=RUKN_META[current];
   if(mode==='forget'){
@@ -963,12 +1041,38 @@ function updateInstr(){
   }
 }
 
+/* ===== اختيار مراحل الخط الزمني: منطق مشترك بين الفأرة ولوحة المفاتيح ===== */
+let focusSegId=null;   // مرحلة يُطلب نقل التركيز إليها بعد إعادة الرسم القادمة
+
+// هل المرحلة قابلة للاختيار في الوضع الحالي؟
+function segSelectable(s){
+  if(mode==='forget') return RUKN_META[current].forgetTypes.includes(s.type) && s.type!=='salam';
+  return !(forgetStage!==null && s.id<forgetStage);   // التذكّر: من مرحلة النسيان فصاعدًا (بما فيها السلام)
+}
+function activateSeg(id){
+  const st=STAGES.find(x=>x.id===id);
+  if(!current || !st || !segSelectable(st))return;
+  if(mode==='forget'){
+    forgetStage=id;
+    if(rememberStage!==null && rememberStage<forgetStage)rememberStage=null;
+    mode='remember';
+  }else{
+    rememberStage=id;
+  }
+  updateInstr(); render(); updateResult();
+}
+
 /* رسم الخط الزمني: نعرض 4 ركعات، كل ركعة شريط فيه مراحلها.
    RTL: الركعة الأولى على اليمين. */
 function render(){
   if(!current){return;}
   const rm=RUKN_META[current];
   const aqdId=aqdThalithaStageId(current);
+
+  // إن كان التركيز على مرحلة قبل إعادة الرسم نحفظه لنعيده بعدها
+  const _ae=document.activeElement;
+  const _seg=(_ae && svgWrap.contains(_ae) && _ae.closest) ? _ae.closest('.seg') : null;
+  const prevFocusId=_seg ? parseInt(_seg.dataset.id) : null;
 
   // dimensions
   const segW=34, segH=46, gapSeg=3, gapRak=22, padX=28, topPad=98, rowH=segH;
@@ -977,10 +1081,10 @@ function render(){
   const H = topPad + rowH + 96;
   const baseY = topPad;
 
-  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="خط الصلاة الزمني">`;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="خط الصلاة الزمني — الأسهم للتنقّل بين المراحل، وEnter أو Space للاختيار">`;
 
   // time direction note
-  svg+=`<text x="${W-padX}" y="22" text-anchor="start" style="font-size:12px;fill:var(--ink-soft)">⟸ يبدأ من اليمين (الأولى) إلى اليسار (السلام)</text>`;
+  svg+=`<text x="${W-padX}" y="12" text-anchor="start" style="font-size:12px;fill:var(--ink-soft)">⟸ يبدأ من اليمين (الأولى) إلى اليسار (السلام)</text>`;
 
   // group stages by rakaa for titles, lay them out RTL
   // We'll place stage 0 at the rightmost.
@@ -1008,8 +1112,10 @@ function render(){
     svg+=`<line x1="${left}" y1="${baseY-8}" x2="${right}" y2="${baseY-8}" stroke="var(--line)" stroke-width="2"/>`;
   }
 
-  // determine which stage types are selectable in forget mode
-  const forgetOk=(s)=> RUKN_META[current].forgetTypes.includes(s.type);
+  // المراحل المتاحة + المرحلة الوحيدة ذات tabindex=0 (roving tabindex): محطة Tab واحدة والأسهم داخلها
+  const selIds=STAGES.filter(segSelectable).map(x=>x.id);
+  const rovingId=[focusSegId, prevFocusId, (mode==='forget'?forgetStage:rememberStage)]
+    .find(id=>id!==null && selIds.includes(id)) ?? (selIds.length?selIds[0]:null);
 
   // draw stages
   STAGES.forEach(s=>{
@@ -1018,16 +1124,7 @@ function render(){
     const isSalam=s.type==='salam';
     if(isSalam){fill='#e8ddc2';}
 
-    // highlight selectable in forget mode
-    let selectable=true, dim=false;
-    if(mode==='forget'){
-      selectable=forgetOk(s)&&!isSalam;
-      dim=!selectable;
-    }else{
-      selectable=!isSalam ? true : true; // remember can be any stage after forget (incl salam)
-      // remember must be at or after the forget stage
-      if(forgetStage!==null && s.id<forgetStage){selectable=false;dim=true;}
-    }
+    const selectable=segSelectable(s), dim=!selectable;
 
     // selected states
     const isForget = (forgetStage===s.id);
@@ -1044,7 +1141,8 @@ function render(){
     if(isRemember)icCol='var(--gold)';
     if(dim)icCol='#b9ad95';
 
-    svg+=`<g class="seg" data-id="${s.id}" data-selectable="${selectable}" style="${selectable?'':'opacity:.5;cursor:not-allowed'}">
+    const segLabel = isSalam ? 'السلام' : `الركعة ${rakaaName(s.rakaa)} · ${s.label}`;
+    svg+=`<g class="seg" data-id="${s.id}" data-selectable="${selectable}" role="button" tabindex="${s.id===rovingId?0:-1}" aria-label="${segLabel}" aria-pressed="${isForget||isRemember}" aria-disabled="${!selectable}" style="${selectable?'':'opacity:.5;cursor:not-allowed'}">
       <rect x="${x}" y="${y}" width="${w}" height="${segH}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${(isForget||isRemember)?3:1.5}"/>
       <use href="#i-${icon}" x="${x+w/2-10}" y="${y+(segH-20)/2}" width="20" height="20" style="color:${icCol}"/>
       <text x="${x+w/2}" y="${y+segH+14}" text-anchor="middle" style="font-size:11px;font-weight:500;fill:${txtFill}">${stageLabelShort(s)}</text>
@@ -1080,23 +1178,42 @@ function render(){
   svg+=`</svg>`;
   svgWrap.innerHTML=svg;
 
-  svgWrap.querySelectorAll('.seg').forEach(g=>{
-    g.addEventListener('click',()=>{
-      if(g.dataset.selectable!=='true')return;
-      const id=parseInt(g.dataset.id);
-      if(mode==='forget'){
-        forgetStage=id;
-        if(rememberStage!==null && rememberStage<forgetStage)rememberStage=null;
-        mode='remember';
-      }else{
-        if(forgetStage!==null && id<forgetStage)return;
-        rememberStage=id;
-      }
-      updateInstr(); render(); updateResult(); updatePills();
-    });
-  });
+  // استعادة التركيز بعد إعادة الرسم (لو كان على الخط الزمني أو طُلب نقله إليه)
+  const wantFocus = (focusSegId!==null) ? focusSegId : prevFocusId;
+  if(wantFocus!==null){
+    const target = selIds.includes(wantFocus) ? wantFocus : rovingId;
+    const el = target!==null ? svgWrap.querySelector('.seg[data-id="'+target+'"]') : null;
+    if(el) el.focus({preventScroll:true});
+  }
+  focusSegId=null;
   updatePills();
 }
+
+/* مستمعات مفوَّضة مرّة واحدة على حاوية الخط (تبقى بعد كل إعادة رسم) */
+svgWrap.addEventListener('click',e=>{
+  const g=e.target.closest && e.target.closest('.seg');
+  if(g) activateSeg(parseInt(g.dataset.id));
+});
+svgWrap.addEventListener('keydown',e=>{
+  const g=e.target.closest && e.target.closest('.seg');
+  if(!g)return;
+  const k=e.key;
+  if(k==='Enter'||k===' '||k==='Spacebar'){ e.preventDefault(); activateSeg(parseInt(g.dataset.id)); return; }
+  const sel=[...svgWrap.querySelectorAll('.seg[data-selectable="true"]')];
+  if(!sel.length)return;
+  const i=sel.indexOf(g);
+  let ni=null;
+  // الخط الزمني يبدأ من اليمين: السهم الأيسر = مرحلة لاحقة، والأيمن = مرحلة سابقة
+  if(k==='ArrowLeft'||k==='ArrowDown') ni = i<0 ? 0 : Math.min(i+1, sel.length-1);
+  else if(k==='ArrowRight'||k==='ArrowUp') ni = i<0 ? 0 : Math.max(i-1, 0);
+  else if(k==='Home') ni=0;
+  else if(k==='End') ni=sel.length-1;
+  if(ni===null)return;
+  e.preventDefault();
+  svgWrap.querySelectorAll('.seg').forEach(x=>x.setAttribute('tabindex','-1'));
+  sel[ni].setAttribute('tabindex','0');
+  sel[ni].focus();
+});
 
 function stageLabelShort(s){
   if(s.type==='salam')return 'السلام';
@@ -1108,18 +1225,19 @@ function updatePills(){
   let html='';
   if(forgetStage!==null){
     const s=STAGES.find(x=>x.id===forgetStage);
-    html+=`<span class="pill forget">نسيتُ في: <b>الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}</b> <span class="x" data-clear="forget">✕</span></span>`;
+    html+=`<span class="pill forget">نسيتُ في: <b>الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}</b> <button type="button" class="x" data-clear="forget" aria-label="إلغاء تحديد لحظة النسيان">✕</button></span>`;
   }
   if(rememberStage!==null){
     const s=STAGES.find(x=>x.id===rememberStage);
     const lbl=s.type==='salam'?'بعد السلام':`الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}`;
-    html+=`<span class="pill remember">تذكّرتُ في: <b>${lbl}</b> <span class="x" data-clear="remember">✕</span></span>`;
+    html+=`<span class="pill remember">تذكّرتُ في: <b>${lbl}</b> <button type="button" class="x" data-clear="remember" aria-label="إلغاء تحديد لحظة التذكّر">✕</button></span>`;
   }
   selectctl.innerHTML=html;
   selectctl.querySelectorAll('.x').forEach(x=>{
     x.addEventListener('click',()=>{
-      if(x.dataset.clear==='forget'){forgetStage=null;rememberStage=null;mode='forget';}
-      else{rememberStage=null;mode='remember';}
+      // بعد الإلغاء نُعيد التركيز إلى المرحلة التي أُلغي تحديدها (الزرّ نفسه يختفي)
+      if(x.dataset.clear==='forget'){ focusSegId=forgetStage; forgetStage=null;rememberStage=null;mode='forget'; }
+      else{ focusSegId=rememberStage; rememberStage=null;mode='remember'; }
       updateInstr();render();updateResult();
     });
   });
@@ -1127,17 +1245,17 @@ function updatePills(){
 function rakaaName(r){return ['','الأولى','الثانية','الثالثة','الرابعة'][r];}
 
 function updateResult(){
-  if(forgetStage===null||rememberStage===null){
-    resultBox.classList.remove('show');return;
+  const v=computeVerdict(current, forgetStage, rememberStage);
+  if(!v){
+    resultBox.classList.remove('show');
+    resultBox.setAttribute('aria-hidden','true');   // لا يقرأ قارئ الشاشة نتيجة قديمة مخفية
+    return;
   }
-  const fS=STAGES.find(s=>s.id===forgetStage);
-  const rS=STAGES.find(s=>s.id===rememberStage);
-  const aqdId=aqdThalithaStageId(current);
-  const fautId=fautTadarukStageId(current, fS.rakaa);
+  resultBox.removeAttribute('aria-hidden');
   const rm=RUKN_META[current];
 
   // التذكّر بعد السلام => وجوب إعادة الصلاة (لا غير)
-  if(rS.type==='salam'){
+  if(v.kind==='batil'){
     resultBox.className='result show batil';
     verdictEl.textContent='وجوب إعادة الصلاة';
     explainEl.innerHTML='';
@@ -1147,7 +1265,7 @@ function updateResult(){
   }
 
   // التذكّر قبل فوات محلّ التدارك => رجوع وإتمام الركن + سجود بعدي للزيادة
-  if(fautId === null || rememberStage < fautId){
+  if(v.kind==='recover'){
     resultBox.className='result show recover';
     verdictEl.innerHTML=ico('undo')+' رجوع وإتمام الركن';
     explainEl.innerHTML=recoverText(current);
@@ -1156,9 +1274,8 @@ function updateResult(){
     return;
   }
 
-  const fromAwwaliyyin = (fS.rakaa===1||fS.rakaa===2);
-  const beforeAqd = (rememberStage < aqdId);
-  const qablaSalam = fromAwwaliyyin && beforeAqd;
+  const {fS, fromAwwaliyyin, beforeAqd}=v;
+  const qablaSalam = (v.kind==='before');
 
   resultBox.className='result show '+(qablaSalam?'before':'after');
   verdictEl.innerHTML = ico(qablaSalam?'arrow-right':'arrow-left')+' '+(qablaSalam?'سجودٌ قبل السلام':'سجودٌ بعد السلام');
@@ -1197,6 +1314,9 @@ function showPage(which, updateHash=true){
   document.getElementById('pageNav').setAttribute('data-active', toArkan ? 'arkan' : 'other');
   // زر «كيف أستعمل الأداة» خاصّ بصفحة الأركان فقط
   document.getElementById('helpFab').style.display = toArkan ? 'flex' : 'none';
+  if(!toArkan && document.getElementById('guideOverlay').classList.contains('show')){
+    setGuideOpen(false,{initial:guideLastFocus===null});
+  }
   if(!toArkan) renderOtherPageOnce();
   if(updateHash){
     const h = toArkan ? '#arkan' : '#other';
@@ -1374,7 +1494,7 @@ function renderOtherPageOnce(){
 
   panelsEl.innerHTML = TOPICS.map((t,i)=>`
     <div class="topic-panel${i===0?' active':''}" data-idx="${i}" id="panel-${i}" role="tabpanel">
-      <div class="topic-count">${t.items.length} مسألة</div>
+      <div class="topic-count">${arMasail(t.items.length)}</div>
       ${t.items.map((it,j)=>{
         const inner=`
             <span class="mas-q">${it.q}</span>
@@ -1608,8 +1728,10 @@ function renderSearchResults(query){
   }
 
   const countLine = total>list.length
-    ? `أقرب <b>${list.length}</b> نتائج من أصل ${total} مسألة قريبة:`
-    : `وجدنا <b>${list.length}</b> ${list.length===1?'مسألة قريبة':'مسائل قريبة'} من وصفك:`;
+    ? `أقرب <b>${arNum(list.length)}</b> نتائج من أصل ${arMasail(total)} قريبة من وصفك:`
+    : list.length===1 ? `وجدنا <b>مسألة واحدة</b> قريبة من وصفك:`
+    : list.length===2 ? `وجدنا <b>مسألتين</b> قريبتين من وصفك:`
+    : `وجدنا <b>${arMasail(list.length)}</b> قريبة من وصفك:`;
 
   resultsEl.innerHTML =
     `<div class="search-count">${countLine}</div>` +
@@ -1655,7 +1777,7 @@ const EXAMPLE_QUERIES=[
   });
 
   const nIssues=TOPICS.reduce((a,t)=>a+t.items.length,0);
-  document.getElementById('keyStats').textContent = `${nIssues.toLocaleString('ar-EG')} مسألة في ${TOPICS.length.toLocaleString('ar-EG')} مواضيع — اكتب حالتك أو اختر مثالًا من الأعلى`;
+  document.getElementById('keyStats').textContent = `${arNum(nIssues)} مسألة في ${arNum(TOPICS.length)} مواضيع — اكتب حالتك أو اختر مثالًا من الأعلى`;
 
   // debounce ١٥٠ مللي ثانية حتى لا يُعاد البحث مع كل ضغطة زرّ
   let searchTimer;
@@ -1680,11 +1802,9 @@ const EXAMPLE_QUERIES=[
 /* ===== تهيئة أولية: تطبيق المسار من الرابط، وإخفاء الدليل إن فُتح رابط الصفحة الثانية مباشرة ===== */
 let initHash='';
 try{ initHash=location.hash; }catch(e){}
-if(initHash==='#other'){
-  document.getElementById('guideOverlay').classList.remove('show');
-}
-applyHashRoute();</script>
-
+applyHashRoute();
+// الدليل يفتح تلقائيًا مع صفحة الأركان فقط؛ مع رابط #other يبدأ مغلقًا دون سحب التركيز
+setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
 <script src="./config.js"></script>
 <script>
 (() => {
