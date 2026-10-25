@@ -68,6 +68,7 @@ Then open the Pages site, choose a model, ask a question, and open a citation. F
 - Browser CORS errors: remove duplicate Function URL CORS settings; confirm the configured URL is correct.
 - Timeouts: confirm the 120-second function timeout and outbound internet access.
 - Unavailable models: check provider keys, account access, limits, and credits. A catalog entry is not a guarantee of account entitlement.
+- Rejected answer structure/citations: CloudWatch records `qa_validation_failed` with the model, attempt number and structural reasons (such as `unknown_sourceId` or `answer_requires_sourceIds`). These records exclude questions, answer text and keys. Clarifications/unsupported responses may omit `sourceIds`; the handler normalizes that to an empty list. Answers still require valid citations.
 
 ## Updating sources or code
 

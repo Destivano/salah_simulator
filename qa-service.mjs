@@ -69,14 +69,33 @@ export function validateAnswer(raw, sources) {
   let value;
   try { value = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')); } catch { throw new PublicError(502, 'لم يُرجع النموذج جوابًا موثّقًا صالحًا. حاول مجددًا أو اختر نموذجًا آخر.'); }
   const ids = new Map(sources.map(s => [s.id, s]));
-  if (!['answer', 'clarification', 'unsupported'].includes(value?.status) || !Array.isArray(value.sections) || !value.sections.length || value.sections.length > 20 || value.sections.some(s => typeof s.text !== 'string' || !s.text.trim() || s.text.length > 8000 || !Array.isArray(s.sourceIds) || s.sourceIds.length > 30 || s.sourceIds.some(id => !ids.has(id)) || (value.status === 'answer' && !s.sourceIds.length))) {
-    throw new PublicError(502, 'تعذّر التحقق من مراجع الجواب. حاول مجددًا أو اختر نموذجًا آخر.');
+  const issues = [];
+  if (!['answer', 'clarification', 'unsupported'].includes(value?.status)) issues.push('invalid_status');
+  if (!Array.isArray(value?.sections) || !value.sections.length || value.sections.length > 20) issues.push('invalid_sections');
+  else value.sections.forEach((s, i) => {
+    const issue = code => issues.push(`sections[${i}].${code}`);
+    if (!s || typeof s !== 'object' || Array.isArray(s)) { issue('invalid_section'); return; }
+    if (typeof s.text !== 'string' || !s.text.trim() || s.text.length > 8000) issue('invalid_text');
+    // Non-answer responses already permit []; an omitted field has the same meaning.
+    // Never infer citations, discard unknown IDs, or relax the requirement for answers.
+    if (s.sourceIds === undefined && ['clarification', 'unsupported'].includes(value.status)) s.sourceIds = [];
+    if (!Array.isArray(s.sourceIds)) issue('sourceIds_must_be_array');
+    else {
+      if (s.sourceIds.length > 30) issue('too_many_sourceIds');
+      if (s.sourceIds.some(id => !ids.has(id))) issue('unknown_sourceId');
+      if (value.status === 'answer' && !s.sourceIds.length) issue('answer_requires_sourceIds');
+    }
+  });
+  if (issues.length) {
+    const error = new PublicError(502, 'تعذّر التحقق من مراجع الجواب. حاول مجددًا أو اختر نموذجًا آخر.');
+    error.validationIssues = issues;
+    throw error;
   }
   const sections = value.sections.map(s => ({ text: s.text, sourceIds: [...new Set(s.sourceIds)] }));
   return { status: value.status, sections, sources: [...new Set(sections.flatMap(s => s.sourceIds))].map(id => ids.get(id)) };
 }
 
-export function createService({ env = process.env, fetchImpl = fetch, sourcesLoader = loadSources } = {}) {
+export function createService({ env = process.env, fetchImpl = fetch, sourcesLoader = loadSources, onDiagnostic = record => console.warn(JSON.stringify(record)) } = {}) {
   let busy = false;
   const catalog = new Map();
   async function availableModels() {
@@ -130,8 +149,11 @@ export function createService({ env = process.env, fetchImpl = fetch, sourcesLoa
         try {
           return { ...validateAnswer(choice.message.content, sources), model: model.label };
         } catch (error) {
+          // Log structure-only diagnostics; never user questions, answers, keys or source text.
+          const issues = error.validationIssues || ['invalid_json'];
+          onDiagnostic({ event: 'qa_validation_failed', model: model.id, attempt: attempt + 1, issues });
           if (attempt === 1) throw error;
-          messages.push({ role: 'assistant', content: choice.message.content }, { role: 'user', content: 'الجواب السابق لم يطابق صيغة JSON أو المراجع المطلوبة. أعد الجواب كاملًا وفق مخطط النظام، باستخدام معرفات المصادر حرفيًا. إذا كنت تسأل عن تفاصيل ناقصة فاختر status: clarification، وليس answer. في حالة answer يجب أن تحمل كل فقرة sourceIds صحيحة وغير فارغة. لا تخترع مرجعًا لإرضاء التحقق.' });
+          messages.push({ role: 'assistant', content: choice.message.content }, { role: 'user', content: 'الجواب السابق لم يطابق صيغة JSON أو المراجع المطلوبة. أخطاء البنية: '+JSON.stringify(issues)+'. أعد الجواب كاملًا وفق مخطط النظام، باستخدام معرفات المصادر حرفيًا. إذا كنت تسأل عن تفاصيل ناقصة فاختر status: clarification، وليس answer، واجعل sourceIds: [] للسؤال الذي لا يحتاج مرجعًا. في حالة answer يجب أن تحمل كل فقرة sourceIds صحيحة وغير فارغة. لا تخترع مرجعًا لإرضاء التحقق.' });
         }
         }
     } finally { busy = false; }

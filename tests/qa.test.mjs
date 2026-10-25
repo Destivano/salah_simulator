@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Script } from 'node:vm';
 import http from 'node:http';
+import { createService } from '../qa-service.mjs';
 import { createApp, MODELS, sourcePassages, loadSources, buildMessages, validateInput, validateAnswer } from '../server.mjs';
 
 const sources = sourcePassages('من تكلم ساهيا:\n\tسجد بعد السلام\n\nملاحظة للمراجعة', 'docs/rules.txt');
@@ -82,4 +83,37 @@ test('all inline browser scripts parse', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(match[1]);
   assert.ok(!html.includes('????'));
+});
+
+test('Luna clarification may omit sourceIds without rejecting a valid question', () => {
+  const response = { status: 'clarification', sections: [{ text: 'هل تذكرت قريبًا أم بعد طول؟' }] };
+  const result = validateAnswer(JSON.stringify(response), sources);
+  assert.deepEqual(result.sections[0].sourceIds, []);
+  assert.deepEqual(result.sources, []);
+  assert.equal(validateAnswer(JSON.stringify({ ...response, status: 'unsupported' }), sources).status, 'unsupported');
+  for (const bad of [
+    { ...response, status: 'answer' },
+    { ...response, sections: [{ text: 'سؤال', sourceIds: null }] },
+    { ...response, sections: [{ text: 'سؤال', sourceIds: ['invented'] }] },
+    { ...response, sections: [null] },
+  ]) assert.throws(() => validateAnswer(JSON.stringify(bad), sources), e => Array.isArray(e.validationIssues));
+});
+
+test('two independent users with different Luna questions retain separate responses', async () => {
+  const seen = [];
+  const makeService = () => createService({ env: { COMMAND_CODE_API_KEY: 'test-secret' }, sourcesLoader: async () => sources, fetchImpl: async (url, options) => {
+    if (url.endsWith('/models')) return Response.json({ data: [{ id: 'gpt-6-luna' }] });
+    const body = JSON.parse(options.body);
+    const question = body.messages.at(-1).content;
+    seen.push(question);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const reply = question === 'A' ? { status: 'clarification', sections: [{ text: 'متى تذكرت؟' }] } : valid;
+    return Response.json({ choices: [{ message: { content: JSON.stringify(reply) } }] });
+  } });
+  const [a, b] = await Promise.all(['A', 'B'].map(question => makeService().ask({ model: 'command:gpt-6-luna', question })));
+  assert.equal(a.status, 'clarification');
+  assert.equal(b.status, 'answer');
+  assert.deepEqual(a.sources, []);
+  assert.deepEqual(b.sources, [sources[0]]);
+  assert.deepEqual(seen.sort(), ['A', 'B']);
 });
