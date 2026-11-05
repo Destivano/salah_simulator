@@ -760,7 +760,7 @@
     <p>اسأل بكلماتك. تُرسل مصادر المشروع وسؤالك وسياق المحادثة إلى خدمة الإجابة عبر الإنترنت. افتح المراجع المرفقة لمراجعة الجواب.</p>
     <form id="qaForm">
       <div class="qa-controls">
-        <button type="button" id="qaReload">إعادة الاتصال</button>
+        <button type="button" id="qaReload" hidden>إعادة الاتصال</button>
         <button type="button" id="qaReset">محادثة جديدة</button>
       </div>
       <div id="qaConversation" aria-label="المحادثة"></div>
@@ -1837,7 +1837,7 @@ setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
       status.textContent='الأسئلة الموثّقة ستتاح بعد ربط خدمة الإجابة. يمكنك الآن استعمال المحاكي والبحث المحلي.';
       send.disabled=true;reload.disabled=true;return;
     }
-    pending=true;serviceAvailable=false;controls();status.textContent='جارٍ الاتصال بخدمة الإجابة…';
+    pending=true;serviceAvailable=false;reload.hidden=true;controls();status.textContent='جارٍ الاتصال بخدمة الإجابة…';
     try{
       const response=await fetch(apiUrl('/api/models'),{signal:AbortSignal.timeout(20000)});
       if(!response.ok)throw new Error('تعذّر الاتصال بخدمة الإجابة. حاول مجددًا.');
@@ -1845,7 +1845,7 @@ setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
       serviceAvailable=data.models.some(m=>m.key===modelKey && m.available);
       status.textContent=serviceAvailable?'اكتب سؤالك ثم أرسله.':'خدمة الإجابة غير متاحة حاليًا. حاول إعادة الاتصال.';
     }catch(error){serviceAvailable=false;status.textContent=error.name==='TimeoutError'?'انتهت مهلة الاتصال. أعد المحاولة.':error.message;}
-    finally{pending=false;controls();}
+    finally{pending=false;reload.hidden=serviceAvailable;controls();}
   }
   reload.addEventListener('click',loadModels);
   reset.addEventListener('click',()=>{history=[];conversation.replaceChildren();question.value='';status.textContent='بدأت محادثة جديدة.';question.focus();});
