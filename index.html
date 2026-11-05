@@ -179,12 +179,13 @@
   .guide{
     background:linear-gradient(165deg,#fdfaf1,#f1e7cf);
     border:2px solid var(--gold);border-radius:22px;
-    max-width:560px;width:100%;max-height:90vh;overflow-y:auto;
+    max-width:560px;width:100%;max-height:90vh;overflow:hidden;
     box-shadow:0 20px 60px rgba(43,33,24,.4);
     transform:translateY(20px) scale(.98);transition:transform .3s;
   }
   .guide-overlay.show .guide{transform:translateY(0) scale(1)}
   .guide:focus{outline:none}
+  .guide-scroll{max-height:calc(90vh - 4px);overflow-y:auto}
   .guide-head{
     text-align:center;padding:1.6rem 1.5rem 1rem;border-bottom:2px solid var(--line);
     position:sticky;top:0;background:linear-gradient(165deg,#fdfaf1,#f4ecd8);border-radius:22px 22px 0 0;
@@ -584,6 +585,7 @@
 <!-- ===== دليل الاستخدام (يظهر عند فتح الأداة) ===== -->
 <div class="guide-overlay show" id="guideOverlay">
   <div class="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" tabindex="-1">
+    <div class="guide-scroll">
     <div class="guide-head">
       <div class="g-orn">۞</div>
       <h2 id="guideTitle">كيف تستعمل الأداة؟</h2>
@@ -654,6 +656,7 @@
 
     <div class="guide-foot">
       <button class="guide-start" id="guideStart">فهمتُ، لنبدأ ✦</button>
+    </div>
     </div>
   </div>
 </div>
