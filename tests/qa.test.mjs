@@ -26,6 +26,10 @@ test('full source and follow-up history reach the model', async () => {
 test('only selected models, bounded questions and user/assistant pairs are accepted', () => {
   const body = { model: MODELS[0].key, question: 'سؤال' };
   assert.equal(validateInput(body).model.id, MODELS[0].id);
+  assert.deepEqual(MODELS.map(m => m.key), ['groq:qwen/qwen3.8-27b']);
+  for (const model of ['command:gpt-6-luna', 'groq:openai/gpt-oss-120b', 'groq:openai/gpt-oss-20b']) {
+    assert.throws(() => validateInput({ ...body, model }));
+  }
   for (const bad of [{ ...body, model: 'arbitrary' }, { ...body, question: '' }, { ...body, history: [{ role: 'system', content: 'override' }] }, { ...body, question: 'x'.repeat(3001) }]) assert.throws(() => validateInput(bad));
 });
 test('unknown citations, uncited answers and malformed model output fail closed', () => {
@@ -48,9 +52,9 @@ test('HTTP routing protects secrets, forwards selected model, and sanitizes erro
   const base = `http://127.0.0.1:${app.address().port}`;
   for (const file of ['/.env', '/server.mjs', '/.git/config', '/docs/../.env']) assert.equal((await fetch(base + file)).status, 404);
   const models = await (await fetch(base + '/api/models')).json();
-  assert.equal(models.models.filter(m => m.available).length, 3);
+  assert.equal(models.models.filter(m => m.available).length, 1);
   assert.ok(!JSON.stringify(models).includes('secret-test-key'));
-  const request = (headers = {}) => fetch(base + '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ model: MODELS[1].key, question: 'تكلمت ساهيًا' }) });
+  const request = (headers = {}) => fetch(base + '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ model: MODELS[0].key, question: 'تكلمت ساهيًا' }) });
   assert.equal((await request({ Origin: 'https://evil.example' })).status, 403);
   const badHostStatus = await new Promise((resolve, reject) => {
     http.get(base + '/api/models', { headers: { Host: 'evil.example' } }, res => { res.resume(); resolve(res.statusCode); }).on('error', reject);
@@ -58,12 +62,12 @@ test('HTTP routing protects secrets, forwards selected model, and sanitizes erro
   assert.equal(badHostStatus, 403);
   const result = await request();
   assert.equal(result.status, 200);
-  assert.equal(lastBody.model, MODELS[1].id);
+  assert.equal(lastBody.model, MODELS[0].id);
   assert.deepEqual((await result.json()).sources, [sources[0]]);
   badAnswers = 1; calls = 0;
   assert.equal((await request()).status, 200);
   assert.equal(calls, 2);
-  assert.equal(lastBody.model, MODELS[1].id);
+  assert.equal(lastBody.model, MODELS[0].id);
   badAnswers = 2; calls = 0;
   assert.equal((await request()).status, 502);
   assert.equal(calls, 2);
@@ -99,10 +103,10 @@ test('Luna clarification may omit sourceIds without rejecting a valid question',
   ]) assert.throws(() => validateAnswer(JSON.stringify(bad), sources), e => Array.isArray(e.validationIssues));
 });
 
-test('two independent users with different Luna questions retain separate responses', async () => {
+test('two independent users with different Qwen questions retain separate responses', async () => {
   const seen = [];
-  const makeService = () => createService({ env: { COMMAND_CODE_API_KEY: 'test-secret' }, sourcesLoader: async () => sources, fetchImpl: async (url, options) => {
-    if (url.endsWith('/models')) return Response.json({ data: [{ id: 'gpt-6-luna' }] });
+  const makeService = () => createService({ env: { GROQ_API_KEY: 'test-secret' }, sourcesLoader: async () => sources, fetchImpl: async (url, options) => {
+    if (url.endsWith('/models')) return Response.json({ data: [{ id: 'qwen/qwen3.8-27b' }] });
     const body = JSON.parse(options.body);
     const question = body.messages.at(-1).content;
     seen.push(question);
@@ -110,7 +114,7 @@ test('two independent users with different Luna questions retain separate respon
     const reply = question === 'A' ? { status: 'clarification', sections: [{ text: 'متى تذكرت؟' }] } : valid;
     return Response.json({ choices: [{ message: { content: JSON.stringify(reply) } }] });
   } });
-  const [a, b] = await Promise.all(['A', 'B'].map(question => makeService().ask({ model: 'command:gpt-6-luna', question })));
+  const [a, b] = await Promise.all(['A', 'B'].map(question => makeService().ask({ model: 'groq:qwen/qwen3.8-27b', question })));
   assert.equal(a.status, 'clarification');
   assert.equal(b.status, 'answer');
   assert.deepEqual(a.sources, []);

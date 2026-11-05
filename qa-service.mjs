@@ -5,17 +5,10 @@ import path from 'node:path';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 export const MODELS = [
-  ['groq', 'openai/gpt-oss-120b', 'GPT OSS 120B'],
-  ['groq', 'openai/gpt-oss-20b', 'GPT OSS 20B'],
   ['groq', 'qwen/qwen3.8-27b', 'Qwen 3.8 27B'],
-  ['command', 'gpt-6-luna', 'GPT 6 Luna'],
-  ['command', 'moonshotai/Kimi-K3', 'Kimi K3'],
-  ['command', 'zai-org/GLM-5.3', 'GLM 5.3'],
-  ['command', 'deepseek/deepseek-v4-pro', 'DeepSeek V4 Pro'],
 ].map(([provider, id, label]) => ({ key: `${provider}:${id}`, provider, id, label }));
 const PROVIDERS = {
   groq: { base: 'https://api.groq.com/openai/v1', env: 'GROQ_API_KEY' },
-  command: { base: 'https://api.commandcode.ai/provider/v1', env: 'COMMAND_CODE_API_KEY' },
 };
 export class PublicError extends Error {
   constructor(status, message) { super(message); this.status = status; }

@@ -1846,9 +1846,9 @@ setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
       if(!response.ok)throw new Error('تعذّر تحميل النماذج. تحقق من تشغيل الخادم.');
       const data=await response.json();
       model.replaceChildren();
-      for(const [provider,label] of [['groq','Groq'],['command','Command Code']]){
+      for(const [provider,label] of [['groq','Groq']]){
         const group=element('optgroup');group.label=label;
-        for(const m of data.models.filter(m=>m.provider===provider)){
+        for(const m of data.models.filter(m=>m.provider===provider && m.id==='qwen/qwen3.8-27b')){
           const option=element('option',m.label+(m.available?'':' — '+m.reason));
           option.value=m.key;option.disabled=!m.available;group.append(option);
         }

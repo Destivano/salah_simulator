@@ -18,12 +18,11 @@ In the AWS Lambda console:
    | Variable | Value |
    | --- | --- |
    | `GROQ_API_KEY` | Your Groq key from your local `.env` |
-   | `COMMAND_CODE_API_KEY` | Your Command Code key from your local `.env` |
    | `ALLOWED_ORIGINS` | `https://destivano.github.io` |
 
    The origin has **no repository path and no trailing slash**. For additional sites, use comma-separated exact origins. Do not put keys in GitHub variables, `config.js`, or the ZIP.
 
-5. Leave the function outside a VPC unless you have configured outbound internet access. It must reach both providers over HTTPS.
+5. Leave the function outside a VPC unless you have configured outbound internet access. It must reach Groq over HTTPS.
 6. Under Configuration → Function URL, create a URL with **Auth type: NONE** and **Invoke mode: BUFFERED**. Leave Function URL CORS configuration **disabled/unset**: the handler supplies CORS headers, including preflight responses. Do not configure a second set of CORS headers in AWS.
 7. Confirm the resource policy allows public Function URL invocation. When creating a NONE URL in the console, AWS normally adds this. Current Function URLs require both `lambda:InvokeFunctionUrl` (condition `lambda:FunctionUrlAuthType = NONE`) and `lambda:InvokeFunction` (condition `lambda:InvokedViaFunctionUrl = true`) permissions for public invocation. If AWS shows a policy warning, use the console's suggested policy rather than granting unrestricted invocation outside the URL.
 8. Set reserved concurrency to **2** as an initial ceiling (or the smallest value your account permits), and configure provider spending limits and AWS billing alerts.

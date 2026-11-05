@@ -22,7 +22,7 @@ test('Function URL CORS preflight and origin rejection', async () => {
 test('Lambda serves model list and handles base64 Arabic JSON', async () => {
   let received;
   const handler = createHandler({ service: { availableModels: async () => MODELS, ask: async body => { received = body; return { status: 'clarification' }; } } });
-  assert.equal(JSON.parse((await handler(event())).body).models.length, 7);
+  assert.equal(JSON.parse((await handler(event())).body).models.length, 1);
   const body = { model: MODELS[0].key, question: 'نسيت السجود' };
   const input = event('POST', '/api/ask', Buffer.from(JSON.stringify(body)).toString('base64'));
   input.isBase64Encoded = true;

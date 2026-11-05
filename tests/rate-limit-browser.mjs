@@ -14,13 +14,19 @@ try {
     const url = new URL(route.request().url());
     if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: html });
     if (url.pathname === '/config.js') return route.fulfill({ contentType: 'text/javascript', body: 'window.SAHW_CONFIG={};' });
-    if (url.pathname === '/api/models') return route.fulfill({ json: { models: [{ ...MODELS[0], available: true }] } });
+    if (url.pathname === '/api/models') return route.fulfill({ json: { models: [
+      { provider: 'command', id: 'gpt-6-luna', key: 'command:gpt-6-luna', label: 'Luna', available: true },
+      { provider: 'groq', id: 'openai/gpt-oss-120b', key: 'groq:openai/gpt-oss-120b', label: 'GPT OSS', available: true },
+      { ...MODELS[0], available: true },
+    ] } });
     calls.push(route.request().postDataJSON());
     if (calls.length === 2 || alwaysLimited) return route.fulfill({ status: 429, json: { error: 'حد الاستخدام', retryAfterSeconds: 1 } });
     return route.fulfill({ json: { status: 'answer', model: 'Test', sections: [{ text: 'جواب تجريبي', sourceIds: [] }], sources: [] } });
   });
   await page.goto('http://127.0.0.1:4173/#other');
   await page.waitForFunction(() => !document.getElementById('qaSend').disabled);
+  assert.equal(await page.locator('#qaModel option').count(), 1);
+  assert.equal(await page.locator('#qaModel').inputValue(), 'groq:qwen/qwen3.8-27b');
   for (const q of ['السؤال الأول', 'سؤال المتابعة']) {
     await page.locator('#qaQuestion').fill(q);
     await page.locator('#qaSend').click();

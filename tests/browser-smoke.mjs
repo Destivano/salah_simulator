@@ -11,7 +11,7 @@ try {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:3000/#other');
     await page.waitForFunction(() => !document.getElementById('qaSend').disabled);
-    assert.equal(await page.locator('#qaModel option:not([disabled])').count(), 7);
+    assert.equal(await page.locator('#qaModel option:not([disabled])').count(), 1);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     await page.route('**/api/ask', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 'answer', model: 'UI test', sections: [{ text: '<img src=x onerror=alert(1)> نص آمن', sourceIds: ['s-test'] }], sources: [{ id: 's-test', file: 'docs/rules.txt', start: 1, end: 2, text: 'النص الأصلي' }] }) }));
     await page.locator('#qaQuestion').fill('سؤال تجريبي');
