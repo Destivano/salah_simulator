@@ -757,12 +757,10 @@
 
   <section class="qa-panel" aria-labelledby="qaTitle">
     <h2 id="qaTitle">اسأل من مصادر المشروع</h2>
-    <p>اختر نموذجًا واسأل بكلماتك. تُرسل مصادر المشروع وسؤالك وسياق المحادثة إلى الخدمة المختارة عبر الإنترنت. افتح المراجع المرفقة لمراجعة الجواب.</p>
+    <p>اسأل بكلماتك. تُرسل مصادر المشروع وسؤالك وسياق المحادثة إلى خدمة الإجابة عبر الإنترنت. افتح المراجع المرفقة لمراجعة الجواب.</p>
     <form id="qaForm">
       <div class="qa-controls">
-        <label for="qaModel">النموذج</label>
-        <select id="qaModel" disabled><option>جارٍ تحميل النماذج…</option></select>
-        <button type="button" id="qaReload">تحديث النماذج</button>
+        <button type="button" id="qaReload">إعادة الاتصال</button>
         <button type="button" id="qaReset">محادثة جديدة</button>
       </div>
       <div id="qaConversation" aria-label="المحادثة"></div>
@@ -1811,7 +1809,9 @@ setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
 <script src="./config.js"></script>
 <script>
 (() => {
-  const form=document.getElementById('qaForm'), model=document.getElementById('qaModel');
+  const form=document.getElementById('qaForm');
+  const modelKey='groq:qwen/qwen3.8-27b';
+  let serviceAvailable=false;
   const question=document.getElementById('qaQuestion'), send=document.getElementById('qaSend');
   const status=document.getElementById('qaStatus'), conversation=document.getElementById('qaConversation');
   const reset=document.getElementById('qaReset'), reload=document.getElementById('qaReload');
@@ -1823,53 +1823,39 @@ setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
   const digits=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
   const element=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
   function controls(){
-    send.disabled=pending || !model.value || model.selectedOptions[0]?.disabled;
-    model.disabled=pending; reset.disabled=pending; reload.disabled=pending;
+    send.disabled=pending || !serviceAvailable;
+    reset.disabled=pending; reload.disabled=pending;
     question.disabled=pending;
     form.setAttribute('aria-busy',String(pending));
   }
   async function loadModels(){
     if(location.protocol==='file:'){
       status.textContent='للأسئلة الموثّقة، شغّل الخادم بالأمر npm start ثم افتح عنوانه في المتصفح. البحث المحلي يعمل هنا دون اتصال.';
-      model.replaceChildren(element('option','يتطلب تشغيل الخادم'));
-      model.disabled=true;send.disabled=true;reload.disabled=true;return;
+      send.disabled=true;reload.disabled=true;return;
     }
-    const previous=model.value;
     if(!isLocal && !configuredBase){
       status.textContent='الأسئلة الموثّقة ستتاح بعد ربط خدمة الإجابة. يمكنك الآن استعمال المحاكي والبحث المحلي.';
-      model.replaceChildren(element('option','خدمة الإجابة غير متصلة بعد'));
-      model.disabled=true;send.disabled=true;reload.disabled=true;return;
+      send.disabled=true;reload.disabled=true;return;
     }
-    pending=true;controls();status.textContent='جارٍ التحقق من النماذج…';
+    pending=true;serviceAvailable=false;controls();status.textContent='جارٍ الاتصال بخدمة الإجابة…';
     try{
       const response=await fetch(apiUrl('/api/models'),{signal:AbortSignal.timeout(20000)});
-      if(!response.ok)throw new Error('تعذّر تحميل النماذج. تحقق من تشغيل الخادم.');
+      if(!response.ok)throw new Error('تعذّر الاتصال بخدمة الإجابة. حاول مجددًا.');
       const data=await response.json();
-      model.replaceChildren();
-      for(const [provider,label] of [['groq','Groq']]){
-        const group=element('optgroup');group.label=label;
-        for(const m of data.models.filter(m=>m.provider===provider && m.id==='qwen/qwen3.8-27b')){
-          const option=element('option',m.label+(m.available?'':' — '+m.reason));
-          option.value=m.key;option.disabled=!m.available;group.append(option);
-        }
-        model.append(group);
-      }
-      const available=[...model.options].filter(o=>!o.disabled);
-      model.value=available.some(o=>o.value===previous)?previous:(available[0]?.value||'');
-      status.textContent=available.length?'اختر النموذج ثم أرسل سؤالك.':'لا توجد نماذج متاحة. تحقق من المفاتيح والاتصال ثم حدّث القائمة.';
-    }catch(error){model.replaceChildren();status.textContent=error.name==='TimeoutError'?'انتهت مهلة تحميل النماذج. أعد المحاولة.':error.message;}
+      serviceAvailable=data.models.some(m=>m.key===modelKey && m.available);
+      status.textContent=serviceAvailable?'اكتب سؤالك ثم أرسله.':'خدمة الإجابة غير متاحة حاليًا. حاول إعادة الاتصال.';
+    }catch(error){serviceAvailable=false;status.textContent=error.name==='TimeoutError'?'انتهت مهلة الاتصال. أعد المحاولة.':error.message;}
     finally{pending=false;controls();}
   }
   reload.addEventListener('click',loadModels);
-  model.addEventListener('change',()=>{controls();status.textContent='سيجيب النموذج المختار مع مراعاة سياق المحادثة الحالية.';});
   reset.addEventListener('click',()=>{history=[];conversation.replaceChildren();question.value='';status.textContent='بدأت محادثة جديدة.';question.focus();});
   form.addEventListener('submit',async event=>{
     event.preventDefault();
-    if(pending || !question.value.trim() || !model.value)return;
+    if(pending || !question.value.trim() || !serviceAvailable)return;
     if(history.length>=12){status.textContent='بلغت المحادثة ستة أسئلة. ابدأ محادثة جديدة للمتابعة.';return;}
     const q=question.value.trim();pending=true;controls();status.textContent='جارٍ قراءة المصادر وإعداد الجواب…';
     try{
-      const payload=JSON.stringify({model:model.value,question:q,history});
+      const payload=JSON.stringify({model:modelKey,question:q,history});
       let answer;
       for(let attempt=0;attempt<2;attempt++){
         const response=await fetch(apiUrl('/api/ask'),{method:'POST',headers:{'Content-Type':'application/json'},body:payload,signal:AbortSignal.timeout(130000)});

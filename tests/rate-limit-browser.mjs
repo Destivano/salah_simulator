@@ -25,14 +25,14 @@ try {
   });
   await page.goto('http://127.0.0.1:4173/#other');
   await page.waitForFunction(() => !document.getElementById('qaSend').disabled);
-  assert.equal(await page.locator('#qaModel option').count(), 1);
-  assert.equal(await page.locator('#qaModel').inputValue(), 'groq:qwen/qwen3.8-27b');
+  assert.equal(await page.locator('#qaModel').count(), 0);
   for (const q of ['السؤال الأول', 'سؤال المتابعة']) {
     await page.locator('#qaQuestion').fill(q);
     await page.locator('#qaSend').click();
     await page.waitForFunction(() => !document.getElementById('qaSend').disabled);
   }
   assert.equal(calls.length, 3);
+  assert.ok(calls.every(call=>call.model==='groq:qwen/qwen3.8-27b'));
   assert.deepEqual(calls[1], calls[2]);
   assert.equal(calls[2].history.length, 2);
   assert.equal(await page.locator('.qa-turn').count(), 2);
