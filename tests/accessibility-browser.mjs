@@ -23,6 +23,10 @@ try {
     assert.equal(await page.locator('#aiInvite').isVisible(), true);
     const bubble=await page.locator('#aiInvite').boundingBox();
     assert.ok(bubble.x>=0 && bubble.x+bubble.width<=width && bubble.y>=0 && bubble.y+bubble.height<=900);
+    if(width>640){
+      const title=await page.locator('#page-arkan header').boundingBox();
+      assert.ok(bubble.y+bubble.height<=title.y, 'Callout must not cover the title or introduction');
+    }
     await page.locator('#aiInviteClose').click();
     assert.equal(await page.locator('#aiInvite').isVisible(), false);
     assert.equal(await page.locator('#timelineStep').isVisible(), false);

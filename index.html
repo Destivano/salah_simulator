@@ -308,6 +308,10 @@
   .ai-invite-go{border:0;border-radius:10px;background:var(--crimson);color:white;font:inherit;font-size:.9rem;padding:.55rem .85rem;cursor:pointer}
   .ai-invite-go:hover{background:var(--ink)}
   body:has(#aiInvite:not([hidden])) #helpFab{visibility:hidden}
+  @media(min-width:641px){
+    .page-switch:has(#aiInvite:not([hidden])){position:relative}
+    .seg-switch:has(#aiInvite:not([hidden])){margin-bottom:var(--invite-space,260px)}
+  }
   @media(prefers-reduced-motion:reduce){.ai-invite{animation:none}}
 
   @media (max-width:640px){
@@ -1895,7 +1899,13 @@ setGuideOpen(false, {initial:true});</script>
 <script>
 (() => {
   const invite=document.getElementById('aiInvite');
+  // Reserve the actual card height, including wrapped text and browser zoom.
+  const sizeInvite=()=>{
+    if(!invite.hidden)document.getElementById('pageNav').style.setProperty('--invite-space',`${invite.offsetHeight+28}px`);
+  };
+  new ResizeObserver(sizeInvite).observe(invite);
   invite.hidden=location.hash==='#other';
+  sizeInvite();
   document.getElementById('aiInviteClose').addEventListener('click',()=>{
     invite.hidden=true;document.getElementById('btnPageOther').focus({preventScroll:true});
   });
