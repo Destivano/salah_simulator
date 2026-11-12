@@ -295,6 +295,20 @@
   .switch-btn .ico{width:1.25em;height:1.25em}
   .switch-btn:hover{color:var(--crimson)}
   .switch-btn.active,.switch-btn.active:hover{color:#fff}
+  .ai-invite{
+    position:absolute;top:calc(100% + 14px);left:0;width:300px;max-width:calc(100vw - 32px);
+    padding:1.15rem 1.2rem;border:1px solid var(--gold);border-radius:18px;
+    background:linear-gradient(145deg,#fffdf7,#f4ead0);color:var(--ink);
+    box-shadow:0 12px 35px rgba(43,33,24,.2);animation:fadein .35s ease-out;
+  }
+  .ai-invite::before{content:"";position:absolute;top:-7px;left:28%;width:12px;height:12px;background:#fffdf7;border-top:1px solid var(--gold);border-left:1px solid var(--gold);transform:rotate(45deg)}
+  .ai-invite h2{font-size:1.05rem;color:var(--crimson);margin:0 0 .45rem;padding-left:1.4rem}
+  .ai-invite p{font-size:.9rem;line-height:1.8;margin:0 0 .8rem}
+  .ai-invite-close{position:absolute;left:.55rem;top:.5rem;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:1.3rem;line-height:1;padding:.3rem}
+  .ai-invite-go{border:0;border-radius:10px;background:var(--crimson);color:white;font:inherit;font-size:.9rem;padding:.55rem .85rem;cursor:pointer}
+  .ai-invite-go:hover{background:var(--ink)}
+  body:has(#aiInvite:not([hidden])) #helpFab{visibility:hidden}
+  @media(prefers-reduced-motion:reduce){.ai-invite{animation:none}}
 
   @media (max-width:640px){
     body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
@@ -308,6 +322,8 @@
     .switch-btn .ico{width:1.5em;height:1.5em}
     .switch-btn.active,.switch-btn.active:hover{background:var(--crimson-soft);color:var(--crimson)}
     .help-fab{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+    .ai-invite{top:auto;bottom:calc(100% + 16px);left:8px;width:290px}
+    .ai-invite::before{top:auto;bottom:-7px;transform:rotate(225deg);background:#f4ead0}
   }
 
   .page{display:none}
@@ -680,6 +696,12 @@
     <span class="seg-ind" aria-hidden="true"></span>
     <button class="switch-btn active" id="btnPageArkan" data-page="page-arkan" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-dome"/></svg><span>نسيان الأركان</span></button>
     <button class="switch-btn" id="btnPageOther" data-page="page-other" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-scroll"/></svg><span>سائر مسائل السهو</span></button>
+    <aside class="ai-invite" id="aiInvite" aria-labelledby="aiInviteTitle" hidden>
+      <button type="button" class="ai-invite-close" id="aiInviteClose" aria-label="إغلاق التعريف بالمساعد">×</button>
+      <h2 id="aiInviteTitle">لديك سؤال آخر عن السهو؟</h2>
+      <p>هنا يمكنك سؤال المساعد الذكي عن مسائل أوسع في سجود السهو، بالاعتماد على مصادر المشروع المستندة إلى متن الأخضري.</p>
+      <button type="button" class="ai-invite-go" id="aiInviteGo">اسأل المساعد الذكي <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg></button>
+    </aside>
   </div>
 </nav>
 
@@ -1028,6 +1050,7 @@ const rulelineEl=document.getElementById('ruleline');
 
 choices.addEventListener('click',e=>{
   const btn=e.target.closest('.rukn-btn'); if(!btn)return;
+  document.getElementById('aiInvite').hidden=true;
   document.querySelectorAll('.rukn-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   current=btn.dataset.rukn;
@@ -1369,6 +1392,7 @@ function updateResult(){
 /* ===== مبدّل الصفحتين — بتوجيه عبر hash ليعمل زرّ الرجوع وتُشارك الروابط ===== */
 function showPage(which, updateHash=true){
   const toArkan = which==='page-arkan';
+  if(!toArkan)document.getElementById('aiInvite').hidden=true;
   document.getElementById('page-arkan').classList.toggle('active', toArkan);
   document.getElementById('page-other').classList.toggle('active', !toArkan);
   const bA=document.getElementById('btnPageArkan'), bO=document.getElementById('btnPageOther');
@@ -1868,6 +1892,22 @@ try{ initHash=location.hash; }catch(e){}
 applyHashRoute();
 // التعليمات تظهر تدريجيًا داخل الأداة؛ الدليل الإضافي يُفتح عند الطلب فقط.
 setGuideOpen(false, {initial:true});</script>
+<script>
+(() => {
+  const invite=document.getElementById('aiInvite');
+  invite.hidden=location.hash==='#other';
+  document.getElementById('aiInviteClose').addEventListener('click',()=>{
+    invite.hidden=true;document.getElementById('btnPageOther').focus({preventScroll:true});
+  });
+  document.getElementById('aiInviteGo').addEventListener('click',()=>{
+    invite.hidden=true;showPage('page-other');
+    requestAnimationFrame(()=>document.getElementById('qaQuestion').focus());
+  });
+  invite.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();document.getElementById('aiInviteClose').click();}
+  });
+})();
+</script>
 <script src="./config.js"></script>
 <script>
 (() => {

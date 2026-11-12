@@ -20,6 +20,11 @@ try {
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4173/?width=' + width);
+    assert.equal(await page.locator('#aiInvite').isVisible(), true);
+    const bubble=await page.locator('#aiInvite').boundingBox();
+    assert.ok(bubble.x>=0 && bubble.x+bubble.width<=width && bubble.y>=0 && bubble.y+bubble.height<=900);
+    await page.locator('#aiInviteClose').click();
+    assert.equal(await page.locator('#aiInvite').isVisible(), false);
     assert.equal(await page.locator('#timelineStep').isVisible(), false);
     assert.equal(await page.locator('#guideOverlay').getAttribute('inert'), '');
     await page.locator('#helpFab').click();
@@ -92,8 +97,14 @@ try {
     assert.ok(await page.locator('.qa-turn').isVisible());
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     console.log('PASS keyboard, modal, navigation, Arabic counts and AI panel at width ' + width);
+    await page.goto('http://127.0.0.1:4173/?invite=' + width);
+    await page.locator('#aiInviteGo').click();
+    await page.waitForFunction(()=>document.activeElement.id==='qaQuestion');
+    assert.equal(await page.locator('#aiInvite').isVisible(), false);
+    assert.equal(await page.locator('#page-other').isVisible(), true);
   }
   await page.goto('http://127.0.0.1:4173/?direct=1#other');
+  assert.equal(await page.locator('#aiInvite').isVisible(), false);
   assert.equal(await page.locator('#guideOverlay').getAttribute('inert'), '');
   assert.equal(await page.locator('#page-other').getAttribute('inert'), null);
   await page.locator('#btnPageArkan').click();
