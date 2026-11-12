@@ -296,21 +296,25 @@
   .switch-btn:hover{color:var(--crimson)}
   .switch-btn.active,.switch-btn.active:hover{color:#fff}
   .ai-invite{
-    position:absolute;top:calc(100% + 14px);left:0;width:300px;max-width:calc(100vw - 32px);
+    position:absolute;top:0;right:calc(100% + 16px);width:280px;max-width:calc(100vw - 32px);
     padding:1.15rem 1.2rem;border:1px solid var(--gold);border-radius:18px;
     background:linear-gradient(145deg,#fffdf7,#f4ead0);color:var(--ink);
     box-shadow:0 12px 35px rgba(43,33,24,.2);animation:fadein .35s ease-out;
   }
-  .ai-invite::before{content:"";position:absolute;top:-7px;left:28%;width:12px;height:12px;background:#fffdf7;border-top:1px solid var(--gold);border-left:1px solid var(--gold);transform:rotate(45deg)}
+  .ai-invite::before{content:"";position:absolute;top:24px;right:-7px;width:12px;height:12px;background:#fffdf7;border-top:1px solid var(--gold);border-left:1px solid var(--gold);transform:rotate(135deg)}
   .ai-invite h2{font-size:1.05rem;color:var(--crimson);margin:0 0 .45rem;padding-left:1.4rem}
   .ai-invite p{font-size:.9rem;line-height:1.8;margin:0 0 .8rem}
   .ai-invite-close{position:absolute;left:.55rem;top:.5rem;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:1.3rem;line-height:1;padding:.3rem}
   .ai-invite-go{border:0;border-radius:10px;background:var(--crimson);color:white;font:inherit;font-size:.9rem;padding:.55rem .85rem;cursor:pointer}
   .ai-invite-go:hover{background:var(--ink)}
   body:has(#aiInvite:not([hidden])) #helpFab{visibility:hidden}
-  @media(min-width:641px){
-    .page-switch:has(#aiInvite:not([hidden])){position:relative}
-    .seg-switch:has(#aiInvite:not([hidden])){margin-bottom:var(--invite-space,260px)}
+  @media(min-width:641px) and (max-width:1119px){
+    .page-switch:has(#aiInvite:not([hidden])){justify-content:flex-start}
+    .seg-switch:has(#aiInvite:not([hidden])){width:min(470px,calc(100% - 300px))}
+    .ai-invite{padding:.75rem 1rem}
+    .ai-invite h2{font-size:.9rem;margin-bottom:.3rem}
+    .ai-invite p{font-size:.8rem;line-height:1.5;margin-bottom:.5rem}
+    .ai-invite-go{font-size:.8rem;padding:.35rem .65rem}
   }
   @media(prefers-reduced-motion:reduce){.ai-invite{animation:none}}
 
@@ -326,8 +330,8 @@
     .switch-btn .ico{width:1.5em;height:1.5em}
     .switch-btn.active,.switch-btn.active:hover{background:var(--crimson-soft);color:var(--crimson)}
     .help-fab{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
-    .ai-invite{top:auto;bottom:calc(100% + 16px);left:8px;width:290px}
-    .ai-invite::before{top:auto;bottom:-7px;transform:rotate(225deg);background:#f4ead0}
+    .ai-invite{top:auto;bottom:calc(100% + 16px);left:8px;right:auto;width:290px}
+    .ai-invite::before{top:auto;bottom:-7px;left:28%;right:auto;transform:rotate(225deg);background:#f4ead0}
   }
 
   .page{display:none}
@@ -1899,13 +1903,7 @@ setGuideOpen(false, {initial:true});</script>
 <script>
 (() => {
   const invite=document.getElementById('aiInvite');
-  // Reserve the actual card height, including wrapped text and browser zoom.
-  const sizeInvite=()=>{
-    if(!invite.hidden)document.getElementById('pageNav').style.setProperty('--invite-space',`${invite.offsetHeight+28}px`);
-  };
-  new ResizeObserver(sizeInvite).observe(invite);
   invite.hidden=location.hash==='#other';
-  sizeInvite();
   document.getElementById('aiInviteClose').addEventListener('click',()=>{
     invite.hidden=true;document.getElementById('btnPageOther').focus({preventScroll:true});
   });

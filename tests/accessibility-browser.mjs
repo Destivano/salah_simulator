@@ -17,15 +17,17 @@ try {
     if (path === '/api/models') return route.fulfill({ json: { models: [{ ...MODELS[0], available: true }] } });
     return route.fulfill({ json: { status: 'clarification', model: 'Test', sections: [{ text: 'متى تذكرت؟', sourceIds: [] }], sources: [] } });
   });
-  for (const width of [1280, 390]) {
+  for (const width of [1280, 820, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4173/?width=' + width);
     assert.equal(await page.locator('#aiInvite').isVisible(), true);
     const bubble=await page.locator('#aiInvite').boundingBox();
     assert.ok(bubble.x>=0 && bubble.x+bubble.width<=width && bubble.y>=0 && bubble.y+bubble.height<=900);
     if(width>640){
-      const title=await page.locator('#page-arkan header').boundingBox();
-      assert.ok(bubble.y+bubble.height<=title.y, 'Callout must not cover the title or introduction');
+      const tab=await page.locator('#btnPageOther').boundingBox();
+      assert.ok(bubble.x+bubble.width<tab.x, 'Callout must sit to the left of the other-issues tab');
+      const header=await page.locator('#page-arkan header').boundingBox();
+      assert.ok(header.y<120, 'Callout must not add a spacer above the title');
     }
     await page.locator('#aiInviteClose').click();
     assert.equal(await page.locator('#aiInvite').isVisible(), false);
