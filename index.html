@@ -49,6 +49,17 @@
 
   .wrap{max-width:1080px;margin:0 auto;padding:2rem 1rem 4rem}
 
+  [hidden]{display:none!important}
+  .walk-progress{list-style:none;display:flex;gap:.5rem;padding:0;margin:1rem 0 2rem}
+  .walk-progress li{flex:1;text-align:center;padding:.7rem .3rem;border-bottom:3px solid var(--line);color:var(--ink-soft);font-size:clamp(.8rem,2.8vw,1rem)}
+  .walk-progress li[aria-current]{border-color:var(--crimson);color:var(--crimson);font-weight:700}
+  .walk-progress li.done{border-color:var(--green)}
+  .walk-summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+  .walk-summary button{white-space:nowrap;flex-shrink:0}
+  #result:not(.show){display:none}
+  .walk-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
+  #walkHeading{scroll-margin-top:1.5rem}
+  #selectctl:empty{display:none}
   .step-label{display:flex;align-items:center;gap:.7rem;margin:2rem 0 1rem}
   .step-label .n{font-family:'Aref Ruqaa',serif;font-size:1.1rem;color:#fff;background:var(--gold);width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;flex-shrink:0;box-shadow:0 3px 8px var(--shadow)}
   .step-label h2{font-family:'Aref Ruqaa',serif;font-size:clamp(1.2rem,4vw,1.7rem);color:var(--crimson)}
@@ -243,7 +254,7 @@
   .guide-start{
     flex:1;min-width:160px;font-size:1.05rem;font-weight:700;
     background:var(--crimson);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:.8rem 1.4rem;
-    transition:.2s;box-shadow:0 5px 14px rgba(140,58,43,.35);
+    transition:transform .2s,box-shadow .2s;box-shadow:0 5px 14px rgba(140,58,43,.35);
   }
   .guide-start:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(140,58,43,.45)}
   .guide-dismiss{
@@ -582,8 +593,8 @@
 <symbol id="i-goto" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></g></symbol>
 </svg>
 
-<!-- ===== دليل الاستخدام (يظهر عند فتح الأداة) ===== -->
-<div class="guide-overlay show" id="guideOverlay">
+<!-- ===== دليل إضافي عند الطلب ===== -->
+<div class="guide-overlay" id="guideOverlay">
   <div class="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" tabindex="-1">
     <div class="guide-scroll">
     <div class="guide-head">
@@ -598,7 +609,7 @@
         <div class="g-num">١</div>
         <div class="g-txt">
           اختر <b>الركن الذي نسيته</b> من الأزرار الثلاثة في الأعلى: السجود، أو الركوع، أو الفاتحة.
-          <span class="g-hint">اضغط الزرّ فيصير محدَّدًا بعلامة ✓، وعندها يظهر لك خطّ الصلاة.</span>
+          <span class="g-hint">بعد الاختيار يظهر الركن الذي اخترته وخطّ الصلاة. يمكنك العودة بزرّ «تغيير الركن».</span>
         </div>
       </div>
 
@@ -614,7 +625,7 @@
         <div class="g-num">٣</div>
         <div class="g-txt">
           ثم اضغط <b>المربّع الذي تذكّرتَ فيه</b> أنك نسيت.
-          <span class="g-hint">وتظهر النتيجة مباشرةً بالأسفل، مع بيان الحكم وسببه. للبدء من جديد اضغط زرّ «↺ إعادة الاختيار».</span>
+          <span class="g-hint">وتظهر النتيجة مباشرةً بالأسفل، مع بيان الحكم وسببه. للبدء من جديد اضغط زرّ «حالة جديدة».</span>
         </div>
       </div>
 
@@ -677,12 +688,16 @@
 <header>
   <div class="ornament">۞</div>
   <h1>محاكي سجود السهو</h1>
-  <p class="sub">اختر الركن المنسيّ، ثم حدِّد بنفسك <b>متى نسيتَه</b> و<b>متى تذكّرتَه</b> على خطّ الصلاة — وشاهد الحكم يتغيّر أمامك</p>
+  <p class="sub">نسيتَ ركنًا في الصلاة؟ حدّد ما نسيتَ ومتى تذكّرتَ، لتعرف ما يلزمك فعله.</p>
 </header>
 
 <div class="wrap">
 
   <!-- STEP 1 -->
+  <ol class="walk-progress" aria-label="خطوات تحديد الحالة">
+    <li aria-current="step">١ · الركن</li><li>٢ · موضع النسيان</li><li>٣ · وقت التذكّر</li>
+  </ol>
+  <div id="pillarStep">
   <div class="step-label"><span class="n">١</span><h2>أيّ ركنٍ نسيت؟</h2><span class="rule"></span></div>
   <div class="rukn-choices" id="ruknChoices">
     <button class="rukn-btn" data-rukn="sajda">
@@ -696,11 +711,15 @@
     </button>
   </div>
 
+  </div>
+  <div id="chosenPillar" class="walk-summary" hidden></div>
+  <section id="timelineStep" hidden aria-labelledby="walkTitle">
   <!-- STEP 2 -->
-  <div class="step-label"><span class="n">٢</span><h2>اضغط على خطّ الصلاة لتحديد اللحظتين</h2><span class="rule"></span></div>
+  <div class="step-label" id="walkHeading" tabindex="-1"><span class="n" id="walkNumber">٢</span><h2 id="walkTitle">في أيّ ركعة نسيتَ الركن؟</h2><span class="rule"></span></div>
 
   <div class="board">
-    <p class="board-instr" id="boardInstr">اختر الركن أولًا لتظهر لك ركعات الصلاة.</p>
+    <p class="board-instr" id="boardInstr" aria-live="polite">اختر الركن أولًا لتظهر لك ركعات الصلاة.</p>
+    <div class="selectctl" id="selectctl"></div>
 
     <div class="mode-tabs" id="modeTabs" style="display:none" role="tablist" aria-label="مرحلتا التحديد">
       <button type="button" class="mode-tab" data-mode="forget" role="tab"><span class="badge-dot" style="background:var(--blue)"></span> ١) اختر متى نسيت</button>
@@ -720,17 +739,21 @@
       <span><i class="lbox" style="border-color:var(--gold);background:repeating-linear-gradient(45deg,#f7eccf,#f7eccf 3px,#fff 3px,#fff 6px)"></i> عقد الثالثة</span>
     </div>
 
-    <div class="selectctl" id="selectctl"></div>
-
-    <button class="reset" id="resetBtn" style="display:none">↺ إعادة الاختيار</button>
+    <div class="walk-actions">
+      <button class="reset" id="editSelections" hidden>تعديل الاختيارات</button>
+      <button class="reset" id="resetBtn" style="display:none">حالة جديدة</button>
+    </div>
 
     <div class="result" id="result" role="status" aria-live="polite" aria-hidden="true">
+      <p id="caseSummary"></p>
       <div class="verdict" id="verdict"></div>
       <div class="explain" id="explain"></div>
       <div class="ruleline" id="ruleline"></div>
     </div>
   </div>
+  </section>
 
+  <div id="ruleDetails" hidden>
   <div class="orn-divider" aria-hidden="true"><svg class="ico"><use href="#i-star8"/></svg></div>
 
   <div class="rulebanner">
@@ -740,6 +763,7 @@
     <span style="font-size:.92rem;display:block;margin-top:.5rem;padding-top:.5rem;border-top:1px dashed var(--line)">
       <b style="color:var(--blue)">قبل فوات محلّ التدارك</b> ⟵ يرجع ويأتي بالركن أثناء الصلاة، ثم يسجد بعد السلام للزيادة.
     </span>
+  </div>
   </div>
 
 </div>
@@ -1008,10 +1032,11 @@ choices.addEventListener('click',e=>{
   btn.classList.add('active');
   current=btn.dataset.rukn;
   mode='forget'; forgetStage=null; rememberStage=null;
-  modeTabs.style.display='flex'; legend.style.display='flex'; resetBtn.style.display='block';
+  legend.style.display='flex'; resetBtn.style.display='block';
   updateInstr();
   render();
   updateResult();
+  revealInstruction(true);
 });
 
 modeTabs.addEventListener('click',e=>{
@@ -1019,11 +1044,43 @@ modeTabs.addEventListener('click',e=>{
   mode=t.dataset.mode; updateInstr(); render();
 });
 
-resetBtn.addEventListener('click',()=>{
-  forgetStage=null; rememberStage=null; mode='forget'; updateInstr(); render(); updateResult();
+function restartWalk(){
+  current=null;forgetStage=null;rememberStage=null;mode='forget';
+  document.querySelectorAll('.rukn-btn').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false');});
+  updateInstr();updateResult();
+  choices.querySelector('button').focus();
+}
+resetBtn.addEventListener('click',restartWalk);
+document.getElementById('chosenPillar').addEventListener('click',e=>{
+  if(e.target.closest('button'))restartWalk();
 });
+document.getElementById('editSelections').addEventListener('click',()=>{
+  rememberStage=null;mode='forget';updateInstr();render();updateResult();revealInstruction(true);
+});
+function revealInstruction(focus=false){
+  const heading=document.getElementById('walkHeading');
+  if(focus)heading.focus({preventScroll:true});
+  heading.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+}
 
 function updateInstr(){
+  const complete=forgetStage!==null && rememberStage!==null;
+  const step=!current?1:mode==='forget'?2:3;
+  document.getElementById('pillarStep').hidden=!!current;
+  document.getElementById('timelineStep').hidden=!current;
+  const summary=document.getElementById('chosenPillar');
+  summary.hidden=!current;
+  summary.innerHTML=current?`<span>الركن المنسيّ: <b>${RUKN_META[current].name}</b></span><button class="reset" type="button">تغيير الركن</button>`:'';
+  document.querySelectorAll('.walk-progress li').forEach((el,i)=>{
+    el.classList.toggle('done',complete || i+1<step);
+    if(i+1===step && !complete)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('.rukn-btn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.rukn===current));
+  document.getElementById('ruleDetails').hidden=!complete;
+  document.getElementById('editSelections').hidden=!complete;
+  document.getElementById('walkNumber').textContent=arNum(step);
+  document.getElementById('walkTitle').textContent=complete?'اكتمل تحديد حالتك':step===2?'في أيّ ركعة نسيتَ الركن؟':'متى تذكّرتَ أنك نسيتَه؟';
+  if(!current)return;
   modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active-forget','active-remember','done'));
   const ft=modeTabs.querySelector('[data-mode="forget"]');
   const rt=modeTabs.querySelector('[data-mode="remember"]');
@@ -1040,6 +1097,7 @@ function updateInstr(){
   }else{
     boardInstr.innerHTML=`الآن اضغط على <b>المرحلة التي تذكّرتَ فيها</b> أنك نسيت ${rm.name}.`;
   }
+  if(complete)boardInstr.textContent='راجع اختياراتك والحكم أسفل خطّ الصلاة. يمكنك تعديل الاختيارات أو بدء حالة جديدة.';
 }
 
 /* ===== اختيار مراحل الخط الزمني: منطق مشترك بين الفأرة ولوحة المفاتيح ===== */
@@ -1055,12 +1113,14 @@ function activateSeg(id){
   if(!current || !st || !segSelectable(st))return;
   if(mode==='forget'){
     forgetStage=id;
-    if(rememberStage!==null && rememberStage<forgetStage)rememberStage=null;
+    rememberStage=null;
     mode='remember';
   }else{
     rememberStage=id;
   }
   updateInstr(); render(); updateResult();
+  if(rememberStage===null)revealInstruction();
+  else resultBox.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest'});
 }
 
 /* رسم الخط الزمني: نعرض 4 ركعات، كل ركعة شريط فيه مراحلها.
@@ -1226,12 +1286,12 @@ function updatePills(){
   let html='';
   if(forgetStage!==null){
     const s=STAGES.find(x=>x.id===forgetStage);
-    html+=`<span class="pill forget">نسيتُ في: <b>الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}</b> <button type="button" class="x" data-clear="forget" aria-label="إلغاء تحديد لحظة النسيان">✕</button></span>`;
+    html+=`<span class="pill forget">نسيتُ في: <b>الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}</b> <button type="button" class="x" data-clear="forget" aria-label="تغيير موضع النسيان">تغيير</button></span>`;
   }
   if(rememberStage!==null){
     const s=STAGES.find(x=>x.id===rememberStage);
     const lbl=s.type==='salam'?'بعد السلام':`الركعة ${rakaaName(s.rakaa)} · ${stageLabelShort(s)}`;
-    html+=`<span class="pill remember">تذكّرتُ في: <b>${lbl}</b> <button type="button" class="x" data-clear="remember" aria-label="إلغاء تحديد لحظة التذكّر">✕</button></span>`;
+    html+=`<span class="pill remember">تذكّرتُ في: <b>${lbl}</b> <button type="button" class="x" data-clear="remember" aria-label="تغيير وقت التذكّر">تغيير</button></span>`;
   }
   selectctl.innerHTML=html;
   selectctl.querySelectorAll('.x').forEach(x=>{
@@ -1254,6 +1314,8 @@ function updateResult(){
   }
   resultBox.removeAttribute('aria-hidden');
   const rm=RUKN_META[current];
+  const remembered=STAGES.find(s=>s.id===rememberStage);
+  document.getElementById('caseSummary').textContent=`نسيتَ ${rm.name} في الركعة ${rakaaName(STAGES.find(s=>s.id===forgetStage).rakaa)}، وتذكّرتَ ${remembered.type==='salam'?'بعد السلام':`عند ${stageLabelShort(remembered)} الركعة ${rakaaName(remembered.rakaa)}`}.`;
 
   // التذكّر بعد السلام => وجوب إعادة الصلاة (لا غير)
   if(v.kind==='batil'){
@@ -1804,8 +1866,8 @@ const EXAMPLE_QUERIES=[
 let initHash='';
 try{ initHash=location.hash; }catch(e){}
 applyHashRoute();
-// الدليل يفتح تلقائيًا مع صفحة الأركان فقط؛ مع رابط #other يبدأ مغلقًا دون سحب التركيز
-setGuideOpen(initHash!=='#other', {initial:initHash==='#other'});</script>
+// التعليمات تظهر تدريجيًا داخل الأداة؛ الدليل الإضافي يُفتح عند الطلب فقط.
+setGuideOpen(false, {initial:true});</script>
 <script src="./config.js"></script>
 <script>
 (() => {

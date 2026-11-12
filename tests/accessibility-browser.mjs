@@ -20,6 +20,10 @@ try {
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4173/?width=' + width);
+    assert.equal(await page.locator('#timelineStep').isVisible(), false);
+    assert.equal(await page.locator('#guideOverlay').getAttribute('inert'), '');
+    await page.locator('#helpFab').click();
+    await page.waitForFunction(()=>document.activeElement.id==='guideStart');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'guideStart');
     assert.equal(await page.locator('#page-arkan').getAttribute('inert'), '');
     await page.keyboard.press('Tab');
@@ -30,6 +34,8 @@ try {
     assert.equal(await page.evaluate(() => document.activeElement.id), 'helpFab');
     assert.equal(await page.locator('#guideOverlay').getAttribute('inert'), '');
     await page.locator('[data-rukn="sajda"]').click();
+    assert.equal(await page.locator('#pillarStep').isVisible(), false);
+    assert.equal(await page.locator('.walk-progress [aria-current]').innerText(), '٢ · موضع النسيان');
     const first = page.locator('.seg[tabindex="0"]');
     await first.focus();
     assert.equal(await first.getAttribute('data-id'), '4');
@@ -37,11 +43,14 @@ try {
     assert.equal(await page.evaluate(() => document.activeElement.dataset.id), '9');
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
+    assert.equal(await page.locator('.walk-progress [aria-current]').innerText(), '٣ · وقت التذكّر');
     assert.equal(await page.evaluate(() => document.activeElement.dataset.id), '4');
     await page.keyboard.press('End');
     await page.keyboard.press('Space');
     assert.ok((await page.locator('#result').getAttribute('class')).includes('batil'));
     assert.equal(await page.locator('#result').getAttribute('aria-hidden'), null);
+    assert.match(await page.locator('#caseSummary').innerText(), /السجود/);
+    assert.equal(await page.locator('#editSelections').isVisible(), true);
     await page.locator('[data-clear="remember"]').focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement.dataset.id), '20');
@@ -49,6 +58,20 @@ try {
     await page.locator('[data-clear="forget"]').focus();
     await page.keyboard.press('Space');
     assert.equal(await page.evaluate(() => document.activeElement.dataset.id), '4');
+    await page.locator('#resetBtn').click();
+    assert.equal(await page.locator('#timelineStep').isVisible(), false);
+    for (const pillar of ['ruku', 'fatiha']) {
+      await page.locator(`[data-rukn="${pillar}"]`).click();
+      await page.locator('.seg[tabindex="0"]').press('Enter');
+      await page.locator('.seg[tabindex="0"]').press('End');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#result').getAttribute('aria-hidden'), null);
+      await page.locator('#editSelections').click();
+      assert.equal(await page.locator('#result').getAttribute('aria-hidden'), 'true');
+      assert.equal(await page.locator('.walk-progress [aria-current]').innerText(), '٢ · موضع النسيان');
+      await page.locator('#chosenPillar button').click();
+      assert.equal(await page.locator('#pillarStep').isVisible(), true);
+    }
     await page.locator('#helpFab').click();
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'helpFab');
